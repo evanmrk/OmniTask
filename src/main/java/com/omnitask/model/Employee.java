@@ -3,32 +3,38 @@ package com.omnitask.model;
 import java.util.Objects;
 
 public class Employee {
-    private String employeeId;
+    private String id;
     private String name;
     private String email;
     private String department;
     private String role;
-    private String faceEncodingPath;
+    private String photoPath;    // Penting untuk menampilkan foto profil
+    private String dailyTarget;  // Penting untuk menampilkan target kerja
     private boolean isManager;
 
+    // Constructor Kosong (Wajib untuk beberapa library)
     public Employee() {}
 
-    public Employee(String employeeId, String name, String email, String department, String role) {
-        this.employeeId = employeeId;
+    // Constructor Lengkap
+    public Employee(String id, String name, String email, String department, String role, String photoPath, String dailyTarget) {
+        this.id = id;
         this.name = name;
         this.email = email;
         this.department = department;
         this.role = role;
-        this.isManager = false;
+        this.photoPath = photoPath;
+        this.dailyTarget = dailyTarget;
+        this.isManager = false; // Default false, bisa diubah via setter
     }
 
-    // Getters and Setters
-    public String getEmployeeId() {
-        return employeeId;
+    // --- GETTERS AND SETTERS ---
+
+    public String getId() { // Perbaikan huruf besar 'I'
+        return id;
     }
 
-    public void setEmployeeId(String employeeId) {
-        this.employeeId = employeeId;
+    public void setId(String id) { // Perbaikan huruf besar 'I'
+        this.id = id;
     }
 
     public String getName() {
@@ -63,12 +69,20 @@ public class Employee {
         this.role = role;
     }
 
-    public String getFaceEncodingPath() {
-        return faceEncodingPath;
+    public String getPhotoPath() { // Perbaikan huruf besar 'P'
+        return photoPath;
     }
 
-    public void setFaceEncodingPath(String faceEncodingPath) {
-        this.faceEncodingPath = faceEncodingPath;
+    public void setPhotoPath(String photoPath) { // Perbaikan huruf besar 'P'
+        this.photoPath = photoPath;
+    }
+
+    public String getDailyTarget() { // Penambahan Getter
+        return dailyTarget;
+    }
+
+    public void setDailyTarget(String dailyTarget) { // Penambahan Setter
+        this.dailyTarget = dailyTarget;
     }
 
     public boolean isManager() {
@@ -79,27 +93,28 @@ public class Employee {
         this.isManager = isManager;
     }
 
+    // --- EQUALS, HASHCODE, TOSTRING ---
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Employee employee = (Employee) o;
-        return Objects.equals(employeeId, employee.employeeId);
+        return Objects.equals(id, employee.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(employeeId);
+        return Objects.hash(id);
     }
 
     @Override
     public String toString() {
         return "Employee{" +
-                "employeeId='" + employeeId + '\'' +
+                "id='" + id + '\'' +
                 ", name='" + name + '\'' +
-                ", email='" + email + '\'' +
-                ", department='" + department + '\'' +
-                ", role='" + role + '\'' +
+                ", dailyTarget='" + dailyTarget + '\'' +
+                ", photoPath='" + photoPath + '\'' +
                 '}';
     }
 }

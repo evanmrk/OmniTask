@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.omnitask.controller.RegisterController"
+      alignment="CENTER" spacing="15" style="-fx-padding: 20;">
+
+    <Label text="REGISTRASI KARYAWAN" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+
+    <VBox spacing="5" maxWidth="300" alignment="CENTER_LEFT">
+        <Label text="Employee ID (Otomatis):" style="-fx-font-size: 12px;"/>
+        
+        <TextField fx:id="txtId" promptText="ID Otomatis" disable="true" 
+                   style="-fx-opacity: 1; -fx-background-color: #e0e0e0; -fx-font-weight: bold; -fx-text-fill: black;"/>
+    </VBox>
+    <TextField fx:id="txtName" promptText="Nama Lengkap" maxWidth="300"/>
+
+    <VBox alignment="CENTER" spacing="10">
+        <ImageView fx:id="imgPreview" fitWidth="150" fitHeight="150" preserveRatio="true" style="-fx-border-color: grey;"/>
+        <Button text="Pilih Foto Profil..." onAction="#handleBrowse"/>
+        <Label fx:id="lblStatus" text="" style="-fx-text-fill: blue;"/>
+    </VBox>
+
+    <Button text="SIMPAN DATA" onAction="#handleSave" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 14px;"/>
+
+</VBox>

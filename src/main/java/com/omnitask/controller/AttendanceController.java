@@ -1,282 +1,156 @@
 package com.omnitask.controller;
 
-import com.github.sarxos.webcam.Webcam;
-import com.omnitask.model.Attendance;
+import com.omnitask.model.Employee;
 import com.omnitask.model.Location;
 import com.omnitask.service.AttendanceService;
-import com.omnitask.util.TimeUtil;
+import com.omnitask.service.GeofenceService;
+import com.omnitask.service.SPARQLService;
 import javafx.application.Platform;
-import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.File;
-import java.time.LocalTime;
-import java.util.UUID;
 
 public class AttendanceController {
 
-    @FXML private Label lblEmployeeName;
-    @FXML private Label lblEmployeeId;
-    @FXML private Label lblCurrentTime;
-    @FXML private Label lblWorkPeriod;
-    @FXML private Label lblStatus;
-    @FXML private TextField txtLatitude;
-    @FXML private TextField txtLongitude;
-    @FXML private ImageView imgWebcam;
-    @FXML private Button btnCapture;
+    // --- UI LOGIN ---
+    @FXML private VBox paneLogin;
+    @FXML private TextField txtInputId;
+    @FXML private Label lblError;
+
+    // --- UI DASHBOARD ---
+    @FXML private BorderPane paneDashboard;
+    @FXML private Label lblName;
+    @FXML private Label lblTarget;
+    @FXML private ImageView imgProfile;
+    @FXML private Label lblLocationStatus;
+    @FXML private Label lblResult;
     @FXML private Button btnCheckIn;
     @FXML private Button btnCheckOut;
-    @FXML private VBox vboxResult;
-    @FXML private Label lblResult;
-    @FXML private ProgressIndicator progressIndicator;
 
+    // --- SERVICES ---
+    private SPARQLService sparqlService;
     private AttendanceService attendanceService;
-    private Webcam webcam;
-    private String currentEmployeeId = "EMP001"; // Demo employee
-    private String capturedPhotoPath;
-    private boolean photoCapture = false;
+    private GeofenceService geofenceService;
+    private Employee currentEmployee;
 
     @FXML
     public void initialize() {
+        sparqlService = new SPARQLService();
         attendanceService = new AttendanceService();
-
-        // Set employee info (in real app, get from login)
-        lblEmployeeId.setText(currentEmployeeId);
-        lblEmployeeName.setText("John Doe");
-
-        // Initialize webcam
-        initializeWebcam();
-
-        // Update time periodically
-        startTimeUpdater();
-
-        // Get current location (simulate GPS)
-        simulateGPS();
-
-        vboxResult.setVisible(false);
-        progressIndicator.setVisible(false);
+        geofenceService = new GeofenceService();
     }
 
-    private void initializeWebcam() {
-        new Thread(() -> {
-            webcam = Webcam.getDefault();
-            if (webcam != null) {
-                webcam.open();
-                startWebcamStream();
-            } else {
-                Platform.runLater(() -> {
-                    showAlert("Webcam Error", "No webcam detected!", Alert.AlertType.ERROR);
-                });
-            }
-        }).start();
-    }
-
-    private void startWebcamStream() {
-        Thread thread = new Thread(() -> {
-            while (webcam != null && webcam.isOpen() && !photoCapture) {
-                try {
-                    BufferedImage image = webcam.getImage();
-                    if (image != null) {
-                        Platform.runLater(() -> {
-                            imgWebcam.setImage(SwingFXUtils.toFXImage(image, null));
-                        });
-                    }
-                    Thread.sleep(50);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        thread.setDaemon(true);
-        thread.start();
-    }
-
-    private void startTimeUpdater() {
-        Thread thread = new Thread(() -> {
-            while (true) {
-                try {
-                    Platform.runLater(() -> {
-                        LocalTime now = LocalTime.now();
-                        lblCurrentTime.setText(now.toString());
-                        lblWorkPeriod.setText(TimeUtil.getCurrentWorkPeriod(now));
-                    });
-                    Thread.sleep(1000);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        thread.setDaemon(true);
-        thread.start();
-    }
-
-    private void simulateGPS() {
-        // In real app, use actual GPS library
-        // For now, simulate Medan coordinates with small variance
-        double baseLat = 3.5952;
-        double baseLon = 98.6722;
-        double variance = 0.001;
-
-        txtLatitude.setText(String.format("%.6f", baseLat + (Math.random() * variance)));
-        txtLongitude.setText(String.format("%.6f", baseLon + (Math.random() * variance)));
-    }
-
+    // 1. LOGIKA LOGIN
     @FXML
-    private void handleCapture() {
-        if (webcam == null || !webcam.isOpen()) {
-            showAlert("Error", "Webcam not available!", Alert.AlertType.ERROR);
-            return;
+    private void handleLogin() {
+        String id = txtInputId.getText().trim();
+        if (id.isEmpty()) {
+            lblError.setText("Masukkan ID dulu!"); return;
         }
 
-        photoCapture = true;
-        BufferedImage image = webcam.getImage();
-
-        if (image != null) {
-            try {
-                // Save captured image
-                File photoDir = new File("captured_photos");
-                photoDir.mkdirs();
-
-                capturedPhotoPath = "captured_photos/" + currentEmployeeId + "_" +
-                        UUID.randomUUID().toString() + ".jpg";
-                File photoFile = new File(capturedPhotoPath);
-                ImageIO.write(image, "JPG", photoFile);
-
-                imgWebcam.setImage(SwingFXUtils.toFXImage(image, null));
-
-                showAlert("Success", "Photo captured successfully!", Alert.AlertType.INFORMATION);
-                btnCheckIn.setDisable(false);
-                btnCheckOut.setDisable(false);
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                showAlert("Error", "Failed to capture photo: " + e.getMessage(),
-                        Alert.AlertType.ERROR);
-            }
+        Employee emp = sparqlService.getEmployeeById(id);
+        if (emp != null) {
+            currentEmployee = emp;
+            showDashboard();
+            lblError.setText("");
+        } else {
+            lblError.setText("ID tidak ditemukan!");
         }
-
-        photoCapture = false;
     }
 
+    // 2. LOGIKA LOGOUT
+    @FXML
+    private void handleLogout() {
+        currentEmployee = null;
+        paneDashboard.setVisible(false);
+        paneLogin.setVisible(true);
+        txtInputId.clear();
+        lblResult.setText("");
+    }
+
+    // 3. TAMPILKAN DASHBOARD
+    private void showDashboard() {
+        paneLogin.setVisible(false);
+        paneDashboard.setVisible(true);
+
+        lblName.setText(currentEmployee.getName());
+        lblTarget.setText(currentEmployee.getDailyTarget());
+
+        // LOAD FOTO (PORTABLE)
+        try {
+            String path = currentEmployee.getPhotoPath();
+            if (path != null && !path.isEmpty()) {
+                File file = new File(path);
+                if (file.exists()) {
+                    imgProfile.setImage(new Image(file.toURI().toString()));
+                }
+            } else {
+                imgProfile.setImage(null); // Kosongkan jika tidak ada foto
+            }
+        } catch (Exception e) {
+            System.out.println("Gagal load foto: " + e.getMessage());
+        }
+
+        checkLocation();
+    }
+
+    // 4. CEK LOKASI
+    private void checkLocation() {
+        // Simulasi Lokasi
+        Location loc = new Location(3.5952, 98.6722);
+        boolean isOffice = geofenceService.isWithinGeofence(loc);
+
+        if (isOffice) {
+            lblLocationStatus.setText("Lokasi: Di Kantor (Aman)");
+            lblLocationStatus.setStyle("-fx-text-fill: green;");
+            btnCheckIn.setDisable(false);
+            btnCheckOut.setDisable(false);
+        } else {
+            lblLocationStatus.setText("Lokasi: Diluar Kantor!");
+            lblLocationStatus.setStyle("-fx-text-fill: red;");
+            btnCheckIn.setDisable(true);
+            btnCheckOut.setDisable(true);
+        }
+    }
+
+    // 5. CHECK IN
     @FXML
     private void handleCheckIn() {
-        if (capturedPhotoPath == null) {
-            showAlert("Error", "Please capture a photo first!", Alert.AlertType.WARNING);
-            return;
-        }
-
-        progressIndicator.setVisible(true);
-        vboxResult.setVisible(false);
-
-        new Thread(() -> {
-            try {
-                double lat = Double.parseDouble(txtLatitude.getText());
-                double lon = Double.parseDouble(txtLongitude.getText());
-                Location location = new Location(lat, lon);
-
-                Attendance attendance = attendanceService.checkIn(
-                        currentEmployeeId, location, capturedPhotoPath
-                );
-
-                Platform.runLater(() -> {
-                    progressIndicator.setVisible(false);
-                    vboxResult.setVisible(true);
-
-                    String message = "Check-in successful!\n" +
-                            "Time: " + attendance.getCheckInTime().toLocalTime() + "\n";
-
-                    if (attendance.isLate()) {
-                        message += "Late by: " + attendance.getLateMinutes() + " minutes\n";
-                        lblResult.setStyle("-fx-text-fill: #ff6b6b;");
-                    } else {
-                        message += "On time!\n";
-                        lblResult.setStyle("-fx-text-fill: #51cf66;");
-                    }
-
-                    lblResult.setText(message);
-                    lblStatus.setText("Status: CHECKED IN");
-                    lblStatus.setStyle("-fx-background-color: #51cf66; -fx-text-fill: white;");
-
-                    btnCheckIn.setDisable(true);
-                    capturedPhotoPath = null;
-                });
-
-            } catch (Exception e) {
-                Platform.runLater(() -> {
-                    progressIndicator.setVisible(false);
-                    showAlert("Check-in Failed", e.getMessage(), Alert.AlertType.ERROR);
-                });
-            }
-        }).start();
+        processAttendance(true);
     }
 
+    // 6. CHECK OUT
     @FXML
     private void handleCheckOut() {
-        if (capturedPhotoPath == null) {
-            showAlert("Error", "Please capture a photo first!", Alert.AlertType.WARNING);
-            return;
-        }
+        processAttendance(false);
+    }
 
-        progressIndicator.setVisible(true);
-        vboxResult.setVisible(false);
-
+    private void processAttendance(boolean isCheckIn) {
         new Thread(() -> {
             try {
-                double lat = Double.parseDouble(txtLatitude.getText());
-                double lon = Double.parseDouble(txtLongitude.getText());
-                Location location = new Location(lat, lon);
-
-                Attendance attendance = attendanceService.checkOut(
-                        currentEmployeeId, location, capturedPhotoPath
-                );
+                Location loc = new Location(3.5952, 98.6722);
+                if (isCheckIn) {
+                    attendanceService.checkIn(currentEmployee.getId(), loc, currentEmployee.getPhotoPath());
+                } else {
+                    attendanceService.checkOut(currentEmployee.getId(), loc, currentEmployee.getPhotoPath());
+                }
 
                 Platform.runLater(() -> {
-                    progressIndicator.setVisible(false);
-                    vboxResult.setVisible(true);
-
-                    String message = "Check-out successful!\n" +
-                            "Time: " + attendance.getCheckOutTime().toLocalTime() + "\n" +
-                            "Status: " + attendance.getStatus();
-
-                    lblResult.setText(message);
-                    lblResult.setStyle("-fx-text-fill: #51cf66;");
-                    lblStatus.setText("Status: CHECKED OUT");
-                    lblStatus.setStyle("-fx-background-color: #868e96; -fx-text-fill: white;");
-
-                    btnCheckOut.setDisable(true);
-                    capturedPhotoPath = null;
+                    lblResult.setText(isCheckIn ? "Check-In Berhasil!" : "Check-Out Berhasil!");
+                    lblResult.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+                    if(isCheckIn) btnCheckIn.setDisable(true);
+                    else btnCheckOut.setDisable(true);
                 });
-
             } catch (Exception e) {
                 Platform.runLater(() -> {
-                    progressIndicator.setVisible(false);
-                    showAlert("Check-out Failed", e.getMessage(), Alert.AlertType.ERROR);
+                    lblResult.setText("Gagal: " + e.getMessage());
+                    lblResult.setStyle("-fx-text-fill: red;");
                 });
             }
         }).start();
-    }
-
-    @FXML
-    private void handleRefreshGPS() {
-        simulateGPS();
-        showAlert("GPS Updated", "Location refreshed successfully!", Alert.AlertType.INFORMATION);
-    }
-
-    private void showAlert(String title, String message, Alert.AlertType type) {
-        Alert alert = new Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
-    public void cleanup() {
-        if (webcam != null && webcam.isOpen()) {
-            webcam.close();
-        }
     }
 }
