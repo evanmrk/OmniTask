@@ -18,24 +18,25 @@ public class Main extends Application {
             AppConfig.initialize();
             RDFConfig.initialize();
 
-            // 2. Load main view (attendance view as default)
-            // Pastikan path "/fxml/attendance_view.fxml" sesuai dengan struktur folder resources Anda
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/attendance_view.fxml"));
+            // 2. Load MAIN LAYOUT (Cangkang Utama)
+            // Perhatikan: Kita meload MainLayout, bukan AttendanceScreen
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/MainLayout.fxml"));
             Parent root = loader.load();
 
             // 3. Setup Scene
             Scene scene = new Scene(root, 1200, 800);
 
-            // Load CSS (dengan null check agar aman)
-//            if (getClass().getResource("/css/styles.css") != null) {
-//                scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
-//            } else {
-//                System.err.println("Warning: styles.css not found!");
-//            }
+            // Load CSS (Jika nanti sudah ada file CSS-nya, uncomment ini)
+            // if (getClass().getResource("/css/styles.css") != null) {
+            //    scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+            // }
 
             primaryStage.setTitle("OmniTask - Employee Management System");
             primaryStage.setScene(scene);
+
+            // Opsional: Agar aplikasi terbuka full screen
             primaryStage.setMaximized(true);
+
             primaryStage.show();
 
         } catch (Exception e) {
@@ -46,7 +47,7 @@ public class Main extends Application {
 
     @Override
     public void stop() {
-        // Cleanup resources saat aplikasi ditutup
+        // PENTING: Tetap pertahankan ini agar database Fuseki/TDB tertutup rapi
         RDFConfig.shutdown();
         System.out.println("Application closed successfully");
     }
