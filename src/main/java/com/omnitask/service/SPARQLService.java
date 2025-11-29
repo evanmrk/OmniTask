@@ -1,23 +1,26 @@
 package com.omnitask.service;
 
-import com.omnitask.config.RDFConfig;
-import com.omnitask.model.Attendance;
-import com.omnitask.model.Location;
-import com.omnitask.model.Task;
-import com.omnitask.model.Task.TaskStatus;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.query.*;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdfconnection.RDFConnection;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatter; // Import Baru
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdfconnection.RDFConnection;
+
+import com.omnitask.config.RDFConfig;
+import com.omnitask.model.Attendance;
+import com.omnitask.model.Employee;
+import com.omnitask.model.Location;
+import com.omnitask.model.Task;
+import com.omnitask.model.Task.TaskStatus;
 
 public class SPARQLService {
 
@@ -29,11 +32,77 @@ public class SPARQLService {
 
     private static final String PREFIXES =
             "PREFIX omni: <http://omnitask.com/ontology#> " +
-                    "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> " +
-                    "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ";
+            "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> " +
+            "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ";
 
     private static final DateTimeFormatter DATETIME_FMT = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ISO_LOCAL_DATE;
+
+    // ==========================================
+    // EMPLOYEE METHODS (BARU: UNTUK LOGIN & REGISTRASI)
+    // ==========================================
+
+    public void saveEmployee(Employee emp) {
+        // Mencegah error jika data null, ganti dengan string kosong
+        String email = emp.getEmail() != null ? emp.getEmail() : "";
+        String dept = emp.getDepartment() != null ? emp.getDepartment() : "";
+        String role = emp.getRole() != null ? emp.getRole() : "";
+        String target = emp.getDailyTarget() != null ? emp.getDailyTarget() : "-";
+        String photo = emp.getPhotoPath() != null ? emp.getPhotoPath().replace("\\", "/") : "";
+
+        String updateString = PREFIXES +
+                "INSERT DATA { " +
+                "  omni:emp_" + emp.getId() + " rdf:type omni:Employee ; " +
+                "    omni:hasID \"" + emp.getId() + "\" ; " +
+                "    omni:name \"" + emp.getName() + "\" ; " +
+                "    omni:email \"" + email + "\" ; " +
+                "    omni:department \"" + dept + "\" ; " +
+                "    omni:role \"" + role + "\" ; " +
+                "    omni:photoPath \"" + photo + "\" ; " + // Path foto fisik di komputer
+                "    omni:dailyTarget \"" + target + "\" . " +
+                "}";
+
+        executeUpdate(updateString);
+        System.out.println("✓ Employee " + emp.getName() + " saved to Fuseki.");
+    }
+
+    public Employee getEmployeeById(String id) {
+        String queryString = PREFIXES +
+                "SELECT ?name ?email ?dept ?role ?photo ?target WHERE { " +
+                "  ?s rdf:type omni:Employee ; " +
+                "     omni:hasID \"" + id + "\" ; " +
+                "     omni:name ?name . " +
+                "  OPTIONAL { ?s omni:email ?email } " +
+                "  OPTIONAL { ?s omni:department ?dept } " +
+                "  OPTIONAL { ?s omni:role ?role } " +
+                "  OPTIONAL { ?s omni:photoPath ?photo } " +
+                "  OPTIONAL { ?s omni:dailyTarget ?target } " +
+                "} LIMIT 1";
+
+        try (RDFConnection conn = RDFConfig.getConnection();
+             QueryExecution qExec = conn.query(queryString)) {
+
+            ResultSet rs = qExec.execSelect();
+            if (rs.hasNext()) {
+                QuerySolution soln = rs.next();
+                Employee emp = new Employee();
+                emp.setId(id);
+                emp.setName(soln.getLiteral("name").getString());
+                
+                if (soln.contains("email")) emp.setEmail(soln.getLiteral("email").getString());
+                if (soln.contains("dept")) emp.setDepartment(soln.getLiteral("dept").getString());
+                if (soln.contains("role")) emp.setRole(soln.getLiteral("role").getString());
+                if (soln.contains("photo")) emp.setPhotoPath(soln.getLiteral("photo").getString());
+                if (soln.contains("target")) emp.setDailyTarget(soln.getLiteral("target").getString());
+
+                return emp;
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching employee: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
+    }
 
     // ==========================================
     // ATTENDANCE METHODS
@@ -47,28 +116,33 @@ public class SPARQLService {
         }
 
         Model model = ModelFactory.createDefaultModel();
-        String attendanceURI = NS + "attendance_" + attendance.getAttendanceId();
+        // Menggunakan omni namespace untuk URI
+        String attendanceURI = NS + "att_" + attendance.getId(); 
         Resource attendanceRes = model.createResource(attendanceURI);
 
+        Property rdfType = model.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+        Resource typeAttendance = model.createResource(NS + "Attendance");
+
         Property hasEmployeeId = model.createProperty(NS + "hasEmployeeId");
-        Property hasCheckInTime = model.createProperty(NS + "hasCheckInTime");
-        Property hasCheckInLat = model.createProperty(NS + "hasCheckInLatitude");
-        Property hasCheckInLon = model.createProperty(NS + "hasCheckInLongitude");
-        Property hasCheckInPhoto = model.createProperty(NS + "hasCheckInPhoto");
-        Property isLate = model.createProperty(NS + "isLate");
-        Property lateMinutes = model.createProperty(NS + "lateMinutes");
-        Property hasStatus = model.createProperty(NS + "hasStatus");
+        Property checkInTime = model.createProperty(NS + "checkInTime");
+        Property latitude = model.createProperty(NS + "latitude");
+        Property longitude = model.createProperty(NS + "longitude");
+        Property photoPath = model.createProperty(NS + "photoPath");
+        Property status = model.createProperty(NS + "status");
 
+        attendanceRes.addProperty(rdfType, typeAttendance);
         attendanceRes.addProperty(hasEmployeeId, attendance.getEmployeeId());
-        attendanceRes.addProperty(hasCheckInTime, attendance.getCheckInTime().toString());
-        attendanceRes.addProperty(hasCheckInLat, String.valueOf(attendance.getCheckInLocation().getLatitude()));
-        attendanceRes.addProperty(hasCheckInLon, String.valueOf(attendance.getCheckInLocation().getLongitude()));
-        attendanceRes.addProperty(hasCheckInPhoto, attendance.getCheckInPhotoPath());
-        attendanceRes.addProperty(isLate, String.valueOf(attendance.isLate()));
-        attendanceRes.addProperty(lateMinutes, String.valueOf(attendance.getLateMinutes()));
-        attendanceRes.addProperty(hasStatus, attendance.getStatus().toString());
+        attendanceRes.addProperty(checkInTime, attendance.getCheckInTime().format(DATETIME_FMT));
+        attendanceRes.addProperty(latitude, String.valueOf(attendance.getLocation().getLatitude()));
+        attendanceRes.addProperty(longitude, String.valueOf(attendance.getLocation().getLongitude()));
+        attendanceRes.addProperty(photoPath, attendance.getPhotoPath());
+        
+        if(attendance.getStatus() != null) {
+             attendanceRes.addProperty(status, attendance.getStatus());
+        } else {
+             attendanceRes.addProperty(status, "PRESENT");
+        }
 
-        // Upload to Fuseki
         conn.load(model);
         System.out.println("✓ Attendance saved to Fuseki");
     }
@@ -76,7 +150,7 @@ public class SPARQLService {
     public void updateCheckOut(String attendanceId, LocalDateTime checkOutTime) {
         String updateString = PREFIXES +
                 "DELETE { ?s omni:checkOutTime ?old } " +
-                "INSERT { ?s omni:checkOutTime \"" + checkOutTime.format(DATETIME_FMT) + "\"^^xsd:dateTime } " +
+                "INSERT { ?s omni:checkOutTime \"" + checkOutTime.format(DATETIME_FMT) + "\" } " +
                 "WHERE { " +
                 "  BIND(omni:att_" + attendanceId + " AS ?s) " +
                 "  OPTIONAL { ?s omni:checkOutTime ?old } " +
@@ -112,9 +186,11 @@ public class SPARQLService {
                 att.setId(soln.getLiteral("id").getString());
                 att.setEmployeeId(employeeId);
                 att.setCheckInTime(LocalDateTime.parse(soln.getLiteral("checkIn").getString(), DATETIME_FMT));
-                att.setLatitude(Double.parseDouble(soln.getLiteral("lat").getString()));
-                att.setLongitude(Double.parseDouble(soln.getLiteral("lon").getString()));
-                att.setLocation(new Location(att.getLatitude(), att.getLongitude()));
+                
+                double lat = Double.parseDouble(soln.getLiteral("lat").getString());
+                double lon = Double.parseDouble(soln.getLiteral("lon").getString());
+                att.setLocation(new Location(lat, lon));
+                
                 att.setPhotoPath(soln.getLiteral("photo").getString());
                 att.setStatus(soln.getLiteral("status").getString());
 
@@ -130,7 +206,7 @@ public class SPARQLService {
     }
 
     // ==========================================
-    // TASK METHODS (Yang dicari TaskService)
+    // TASK METHODS
     // ==========================================
 
     public void saveTask(Task task) {
@@ -190,17 +266,17 @@ public class SPARQLService {
         String updateString = PREFIXES +
                 "DELETE { " +
                 "  omni:task_" + task.getId() + " omni:taskStatus ?oldStatus ; " +
-                "                               omni:progress ?oldProg . " +
+                "                             omni:progress ?oldProg . " +
                 "  omni:task_" + task.getId() + " omni:proofPath ?oldProof . " +
                 "  omni:task_" + task.getId() + " omni:notes ?oldNotes . " +
                 "} INSERT { " +
                 "  omni:task_" + task.getId() + " omni:taskStatus \"" + task.getStatus().name() + "\" ; " +
-                "                               omni:progress \"" + task.getProgressPercentage() + "\"^^xsd:int . " +
+                "                             omni:progress \"" + task.getProgressPercentage() + "\"^^xsd:int . " +
                 (task.getProofOfWorkPath() != null ? "  omni:task_" + task.getId() + " omni:proofPath \"" + task.getProofOfWorkPath() + "\" . " : "") +
                 (task.getDailyNotes() != null ? "  omni:task_" + task.getId() + " omni:notes \"" + task.getDailyNotes() + "\" . " : "") +
                 "} WHERE { " +
                 "  omni:task_" + task.getId() + " omni:taskStatus ?oldStatus ; " +
-                "                               omni:progress ?oldProg . " +
+                "                             omni:progress ?oldProg . " +
                 "  OPTIONAL { omni:task_" + task.getId() + " omni:proofPath ?oldProof } " +
                 "  OPTIONAL { omni:task_" + task.getId() + " omni:notes ?oldNotes } " +
                 "}";
@@ -227,7 +303,6 @@ public class SPARQLService {
         return executeListQuery(queryString);
     }
 
-    // Method untuk Pending Tasks (Dibutuhkan TaskService)
     public List<Task> getPendingTasks(String employeeId) {
         String queryString = PREFIXES +
                 "SELECT ?s ?title ?desc ?due ?status ?progress WHERE { " +
@@ -243,7 +318,6 @@ public class SPARQLService {
         return executeListQuery(queryString);
     }
 
-    // Method untuk Today Tasks (Dibutuhkan TaskService)
     public List<Task> getTodayTasks(String employeeId) {
         String today = LocalDate.now().toString();
         String queryString = PREFIXES +
@@ -285,6 +359,7 @@ public class SPARQLService {
                 Task t = new Task();
                 String uri = soln.getResource("s").getURI();
                 t.setId(uri.substring(uri.lastIndexOf("task_") + 5));
+                t.setEmployeeId(soln.getLiteral("empId") != null ? soln.getLiteral("empId").getString() : "");
                 t.setTitle(soln.getLiteral("title").getString());
                 t.setDescription(soln.getLiteral("desc").getString());
                 t.setDueDate(LocalDate.parse(soln.getLiteral("due").getString(), DATE_FMT));

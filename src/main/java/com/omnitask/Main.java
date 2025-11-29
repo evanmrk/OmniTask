@@ -18,24 +18,26 @@ public class Main extends Application {
             AppConfig.initialize();
             RDFConfig.initialize();
 
-            // 2. Load main view (attendance view as default)
-            // Pastikan path "/fxml/attendance_view.fxml" sesuai dengan struktur folder resources Anda
+            // --- PERUBAHAN DI SINI ---
+            
+            // Pastikan nama file SAMA PERSIS (huruf kecil semua sesuai info kamu)
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/attendance_view.fxml"));
             Parent root = loader.load();
 
-            // 3. Setup Scene
-            Scene scene = new Scene(root, 1200, 800);
+            // Ubah ukuran window menjadi lebih besar untuk Dashboard
+            Scene scene = new Scene(root, 1000, 700);
 
-            // Load CSS (dengan null check agar aman)
-//            if (getClass().getResource("/css/styles.css") != null) {
-//                scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
-//            } else {
-//                System.err.println("Warning: styles.css not found!");
-//            }
+            // Opsional: Load CSS jika ada
+            // if (getClass().getResource("/css/styles.css") != null) {
+            //    scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+            // }
 
-            primaryStage.setTitle("OmniTask - Employee Management System");
+            primaryStage.setTitle("OmniTask - Employee Attendance System");
             primaryStage.setScene(scene);
-            primaryStage.setMaximized(true);
+            
+            // Izinkan window di-resize (PENTING untuk dashboard)
+            primaryStage.setResizable(true); 
+            
             primaryStage.show();
 
         } catch (Exception e) {
