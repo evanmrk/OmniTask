@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.omnitask.controller.AttendanceController">
+
+    <!-- Top Bar -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="20" style="-fx-background-color: #5c1a1b;;" styleClass="top-bar">
+            <padding>
+                <Insets bottom="15" left="20" right="20" top="15" />
+            </padding>
+
+            <Label styleClass="app-title" text="OmniTask">
+                <font>
+                    <Font name="System Bold" size="24" />
+                </font>
+            </Label>
+
+            <Region HBox.hgrow="ALWAYS" />
+
+            <VBox alignment="CENTER_RIGHT">
+                <Label fx:id="lblEmployeeName" styleClass="employee-name" text="Employee Name">
+                    <font>
+                        <Font size="16" />
+                    </font>
+                </Label>
+                <Label fx:id="lblEmployeeId" styleClass="employee-id" text="ID: EMP001">
+                    <font>
+                        <Font size="12" />
+                    </font>
+                </Label>
+            </VBox>
+        </HBox>
+    </top>
+
+    <!-- Main Content -->
+    <center>
+        <ScrollPane fitToHeight="true" fitToWidth="true">
+            <VBox spacing="20" style="-fx-background-color: EFF7FA;" styleClass="main-container">
+                <padding>
+                    <Insets bottom="30" left="30" right="30" top="30" />
+                </padding>
+
+                <!-- Status Card -->
+                <VBox spacing="15" styleClass="card">
+                    <padding>
+                        <Insets bottom="20" left="20" right="20" top="20" />
+                    </padding>
+
+                    <Label styleClass="section-title" text="Attendance Status">
+                        <font>
+                            <Font name="System Bold" size="20" />
+                        </font>
+                    </Label>
+
+                    <HBox alignment="CENTER" spacing="40">
+                        <VBox alignment="CENTER" spacing="5">
+                            <Label styleClass="label-subtitle" text="Current Time" />
+                            <Label fx:id="lblCurrentTime" styleClass="time-display" text="--:--:--">
+                                <font>
+                                    <Font name="System Bold" size="32" />
+                                </font>
+                            </Label>
+                        </VBox>
+
+                        <Separator orientation="VERTICAL" />
+
+                        <VBox alignment="CENTER" spacing="5">
+                            <Label styleClass="label-subtitle" text="Work Period" />
+                            <Label fx:id="lblWorkPeriod" styleClass="period-display" text="Check-In Window">
+                                <font>
+                                    <Font name="System Bold" size="18" />
+                                </font>
+                            </Label>
+                        </VBox>
+
+                        <Separator orientation="VERTICAL" />
+
+                        <VBox alignment="CENTER" spacing="5">
+                            <Label styleClass="label-subtitle" text="Status" />
+                            <Label fx:id="lblStatus" styleClass="status-badge" text="Not Checked In">
+                                <font>
+                                    <Font name="System Bold" size="14" />
+                                </font>
+                            </Label>
+                        </VBox>
+                    </HBox>
+                </VBox>
+
+                <!-- Location and Camera Row -->
+                <HBox alignment="TOP_CENTER" spacing="20" style="-fx-background-color: E0F0F5;">
+
+                    <!-- GPS Location Card -->
+                    <VBox spacing="15" styleClass="card" HBox.hgrow="ALWAYS">
+                        <padding>
+                            <Insets bottom="20" left="20" right="20" top="20" />
+                        </padding>
+
+                        <Label styleClass="section-title" text="GPS Location">
+                            <font>
+                                <Font name="System Bold" size="18" />
+                            </font>
+                        </Label>
+
+                        <GridPane hgap="10" vgap="15">
+                            <Label text="Latitude:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                            <TextField fx:id="txtLatitude" editable="false" prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                            <Label text="Longitude:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                            <TextField fx:id="txtLongitude" editable="false" prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                     <columnConstraints>
+                        <ColumnConstraints />
+                        <ColumnConstraints />
+                     </columnConstraints>
+                     <rowConstraints>
+                        <RowConstraints />
+                        <RowConstraints />
+                     </rowConstraints>
+                        </GridPane>
+
+                        <Button onAction="#handleRefreshGPS" styleClass="btn-secondary" text="🔄 Refresh GPS" />
+
+                        <Label styleClass="info-text" text="📍 Geofence: 500m from office" wrapText="true">
+                            <font>
+                                <Font size="12" />
+                            </font>
+                        </Label>
+                    </VBox>
+
+                    <!-- Webcam Card -->
+                    <VBox spacing="15" styleClass="card" HBox.hgrow="ALWAYS">
+                        <padding>
+                            <Insets bottom="20" left="20" right="20" top="20" />
+                        </padding>
+
+                        <Label styleClass="section-title" text="Face Recognition">
+                            <font>
+                                <Font name="System Bold" size="18" />
+                            </font>
+                        </Label>
+
+                        <ImageView fx:id="imgWebcam" fitHeight="300" fitWidth="400" preserveRatio="true" styleClass="webcam-view" />
+
+                        <Button fx:id="btnCapture" onAction="#handleCapture" styleClass="btn-secondary" text="📷 Capture Photo" />
+                    </VBox>
+                </HBox>
+
+                <!-- Action Buttons -->
+                <HBox alignment="CENTER" spacing="20" style="-fx-background-color: #fcb123;;">
+                    <Button fx:id="btnCheckIn" disable="true" onAction="#handleCheckIn" style="-fx-alignment: #000000;;" styleClass="btn-primary" text="✓ Check In">
+                        <font>
+                            <Font name="System Bold" size="16" />
+                        </font>
+                        <padding>
+                            <Insets bottom="15" left="40" right="40" top="15" />
+                        </padding>
+                    </Button>
+
+                    <Button fx:id="btnCheckOut" disable="true" onAction="#handleCheckOut" styleClass="btn-danger" text="✗ Check Out">
+                        <font>
+                            <Font name="System Bold" size="16" />
+                        </font>
+                        <padding>
+                            <Insets bottom="15" left="40" right="40" top="15" />
+                        </padding>
+                    </Button>
+                </HBox>
+
+                <!-- Result Display -->
+                <VBox fx:id="vboxResult" spacing="10" styleClass="card result-card" visible="false">
+                    <padding>
+                        <Insets bottom="20" left="20" right="20" top="20" />
+                    </padding>
+
+                    <Label styleClass="section-title" text="Result">
+                        <font>
+                            <Font name="System Bold" size="18" />
+                        </font>
+                    </Label>
+
+                    <Label fx:id="lblResult" styleClass="result-text" text="Operation result will appear here" wrapText="true">
+                        <font>
+                            <Font size="14" />
+                        </font>
+                    </Label>
+                </VBox>
+
+                <!-- Loading Indicator -->
+                <StackPane>
+                    <ProgressIndicator fx:id="progressIndicator" prefHeight="80" prefWidth="80" visible="false" />
+                </StackPane>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+
+    <!-- Bottom Navigation -->
+    <bottom>
+        <HBox alignment="CENTER" spacing="10" styleClass="bottom-bar">
+            <padding>
+                <Insets bottom="10" left="20" right="20" top="10" />
+            </padding>
+
+            <Button styleClass="nav-button active" text="🏠 Attendance" />
+            <Button styleClass="nav-button" text="📋 Tasks" />
+            <Button styleClass="nav-button" text="📝 Leave Request" />
+            <Button styleClass="nav-button" text="📊 Dashboard" />
+            <Button styleClass="nav-button" text="📜 History" />
+        </HBox>
+    </bottom>
+
+</BorderPane>

@@ -1,0 +1,308 @@
+/* ========================================
+   OmniTask - Modern JavaFX Stylesheet
+   ======================================== */
+
+/* Root Color Palette */
+.root {
+    /* Color Variables */
+    -fx-primary-color: #4c6ef5;
+    -fx-secondary-color: #868e96;
+    -fx-success-color: #51cf66;
+    -fx-danger-color: #ff6b6b;
+    -fx-warning-color: #ffd43b;
+    -fx-main-bg: #f8f9fa;
+    -fx-card-bg: #ffffff;
+    -fx-text-color: #212529;
+    -fx-border-color: #dee2e6;
+
+    /* Apply base background */
+    -fx-background-color: -fx-main-bg;
+    -fx-font-family: "Segoe UI", "Arial", sans-serif;
+    -fx-font-size: 14px;
+}
+
+/* ========================================
+   TOP BAR STYLING
+   ======================================== */
+.top-bar {
+    -fx-background-color: -fx-primary-color;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 10, 0, 0, 2);
+}
+
+.app-title {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.employee-name {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.employee-id {
+    -fx-text-fill: rgba(255, 255, 255, 0.8);
+}
+
+/* ========================================
+   BOTTOM NAVIGATION BAR
+   ======================================== */
+.bottom-bar {
+    -fx-background-color: white;
+    -fx-border-color: -fx-border-color;
+    -fx-border-width: 1 0 0 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 10, 0, 0, -2);
+}
+
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-secondary-color;
+    -fx-font-size: 13px;
+    -fx-padding: 10 20;
+    -fx-cursor: hand;
+    -fx-background-radius: 8;
+}
+
+.nav-button:hover {
+    -fx-background-color: rgba(76, 110, 245, 0.1);
+    -fx-text-fill: -fx-primary-color;
+}
+
+.nav-button.active {
+    -fx-background-color: rgba(76, 110, 245, 0.15);
+    -fx-text-fill: -fx-primary-color;
+    -fx-font-weight: bold;
+}
+
+/* ========================================
+   MAIN CONTAINER
+   ======================================== */
+.main-container {
+    -fx-background-color: -fx-main-bg;
+}
+
+/* ========================================
+   CARD COMPONENTS
+   ======================================== */
+.card {
+    -fx-background-color: -fx-card-bg;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 15, 0, 0, 2);
+}
+
+.card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 20, 0, 0, 4);
+}
+
+/* ========================================
+   TEXT STYLES
+   ======================================== */
+.section-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: -fx-text-color;
+}
+
+.label-subtitle {
+    -fx-text-fill: -fx-secondary-color;
+    -fx-font-size: 12px;
+}
+
+.time-display {
+    -fx-text-fill: -fx-primary-color;
+}
+
+.period-display {
+    -fx-text-fill: -fx-success-color;
+}
+
+.info-text {
+    -fx-text-fill: -fx-secondary-color;
+    -fx-font-style: italic;
+}
+
+.result-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: -fx-text-color;
+}
+
+/* ========================================
+   STATUS BADGE
+   ======================================== */
+.status-badge {
+    -fx-background-color: -fx-secondary-color;
+    -fx-text-fill: white;
+    -fx-padding: 8 16;
+    -fx-background-radius: 20;
+}
+
+/* ========================================
+   BUTTONS
+   ======================================== */
+.btn-primary {
+    -fx-background-color: -fx-primary-color;
+    -fx-text-fill: white;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(76, 110, 245, 0.3), 8, 0, 0, 2);
+}
+
+.btn-primary:hover {
+    -fx-background-color: derive(-fx-primary-color, -10%);
+    -fx-effect: dropshadow(gaussian, rgba(76, 110, 245, 0.4), 12, 0, 0, 3);
+}
+
+.btn-primary:pressed {
+    -fx-background-color: derive(-fx-primary-color, -20%);
+    -fx-translate-y: 1;
+}
+
+.btn-primary:disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
+}
+
+.btn-secondary {
+    -fx-background-color: white;
+    -fx-text-fill: -fx-primary-color;
+    -fx-border-color: -fx-primary-color;
+    -fx-border-width: 2;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-cursor: hand;
+    -fx-padding: 10 20;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: rgba(76, 110, 245, 0.05);
+}
+
+.btn-secondary:pressed {
+    -fx-background-color: rgba(76, 110, 245, 0.1);
+}
+
+.btn-danger {
+    -fx-background-color: -fx-danger-color;
+    -fx-text-fill: white;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(255, 107, 107, 0.3), 8, 0, 0, 2);
+}
+
+.btn-danger:hover {
+    -fx-background-color: derive(-fx-danger-color, -10%);
+    -fx-effect: dropshadow(gaussian, rgba(255, 107, 107, 0.4), 12, 0, 0, 3);
+}
+
+.btn-danger:pressed {
+    -fx-background-color: derive(-fx-danger-color, -20%);
+    -fx-translate-y: 1;
+}
+
+.btn-danger:disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
+}
+
+/* ========================================
+   INPUT FIELDS
+   ======================================== */
+.text-field {
+    -fx-background-color: white;
+    -fx-border-color: -fx-border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 12;
+}
+
+.text-field:focused {
+    -fx-border-color: -fx-primary-color;
+    -fx-border-width: 2;
+}
+
+.text-area {
+    -fx-background-color: white;
+    -fx-border-color: -fx-border-color;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 12;
+}
+
+.text-area:focused {
+    -fx-border-color: -fx-primary-color;
+    -fx-border-width: 2;
+}
+
+.text-area .content {
+    -fx-background-color: white;
+}
+
+/* ========================================
+   SPECIAL COMPONENTS
+   ======================================== */
+.webcam-view {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 10, 0, 0, 2);
+    -fx-background-color: #f1f3f5;
+}
+
+.result-card {
+    -fx-border-color: -fx-success-color;
+    -fx-border-width: 2;
+    -fx-border-radius: 12;
+}
+
+/* ========================================
+   PROGRESS INDICATOR
+   ======================================== */
+.progress-indicator {
+    -fx-progress-color: -fx-primary-color;
+}
+
+/* ========================================
+   SCROLL PANE
+   ======================================== */
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane > .corner {
+    -fx-background-color: transparent;
+}
+
+/* ========================================
+   TABLE VIEW
+   ======================================== */
+.table-view {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+}
+
+.table-view .column-header {
+    -fx-background-color: -fx-main-bg;
+    -fx-font-weight: bold;
+    -fx-padding: 10;
+}
+
+.table-view .table-cell {
+    -fx-padding: 8 12;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: rgba(76, 110, 245, 0.05);
+}
+
+.table-row-cell:selected {
+    -fx-background-color: rgba(76, 110, 245, 0.15);
+}
+
+/* ========================================
+   SEPARATOR
+   ======================================== */
+.separator {
+    -fx-background-color: -fx-border-color;
+}
