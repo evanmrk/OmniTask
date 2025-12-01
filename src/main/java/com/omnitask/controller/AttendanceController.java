@@ -16,6 +16,8 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.scene.control.Button;
+import com.omnitask.controller.EmployeeController;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +38,7 @@ public class AttendanceController {
     @FXML private Label lblResult;
     @FXML private Button btnCheckIn;
     @FXML private Button btnCheckOut;
+    @FXML private Button btnEmployees;
 
     // --- SERVICES ---
     private SPARQLService sparqlService;
@@ -58,8 +61,12 @@ public class AttendanceController {
     public void restoreSession(Employee employee) {
         if (employee != null) {
             this.currentEmployee = employee;
-            // Panggil method showDashboard() yang sudah ada untuk menyembunyikan login & menampilkan menu utama
+            // Panggil showDashboard agar logika pengecekan Role (if manager...) JALAN LAGI
             showDashboard();
+        } else {
+            // Jika data hilang, paksa logout / kembali ke login
+            paneDashboard.setVisible(false);
+            paneLogin.setVisible(true);
         }
     }
 
@@ -93,28 +100,65 @@ public class AttendanceController {
 
     // 3. TAMPILKAN DASHBOARD
     private void showDashboard() {
+        // 1. Tampilkan Panel Dashboard, Sembunyikan Login
         paneLogin.setVisible(false);
         paneDashboard.setVisible(true);
 
-        lblName.setText(currentEmployee.getName());
-        lblTarget.setText(currentEmployee.getDailyTarget());
+        // 2. Set Data Text
+        if (currentEmployee != null) {
+            lblName.setText(currentEmployee.getName());
+            lblTarget.setText(currentEmployee.getDailyTarget() != null ? currentEmployee.getDailyTarget() : "-");
 
-        // LOAD FOTO (PORTABLE)
-        try {
-            String path = currentEmployee.getPhotoPath();
-            if (path != null && !path.isEmpty()) {
-                File file = new File(path);
-                if (file.exists()) {
-                    imgProfile.setImage(new Image(file.toURI().toString()));
-                }
+            // 3. LOGIKA MANAGER (Perbaikan agar tidak hilang)
+            String role = currentEmployee.getRole();
+            System.out.println("Role User saat ini: " + role); // Debugging di console
+
+            if (role != null && role.toLowerCase().contains("manager")) {
+                btnEmployees.setVisible(true);
+                btnEmployees.setManaged(true); // Agar tombol mengambil tempat (tidak layout 0px)
             } else {
-                imgProfile.setImage(null); // Kosongkan jika tidak ada foto
+                btnEmployees.setVisible(false);
+                btnEmployees.setManaged(false);
             }
-        } catch (Exception e) {
-            System.out.println("Gagal load foto: " + e.getMessage());
+
+            // 4. Load Foto (Optional, copy dari kode lama Anda)
+            // ... kode foto ...
         }
 
+        // 5. Cek Lokasi
         checkLocation();
+    }
+
+    @FXML
+    private void handleGoToEmployees() {
+        try {
+            // Pastikan path sesuai dengan struktur folder Anda (/fxml/...)
+            java.net.URL fxmlLocation = getClass().getResource("/fxml/EmployeePage.fxml");
+
+            if (fxmlLocation == null) {
+                throw new java.io.FileNotFoundException("File /fxml/EmployeePage.fxml tidak ditemukan!");
+            }
+
+            FXMLLoader loader = new FXMLLoader(fxmlLocation);
+            Parent root = loader.load();
+
+            // Ambil controller EmployeePage & Kirim data Manager saat ini
+            EmployeeController empController = loader.getController();
+            if (empController != null) {
+                empController.setManager(currentEmployee);
+            }
+
+            // Pindah Scene
+            Stage stage = (Stage) btnEmployees.getScene().getWindow();
+            stage.setScene(new Scene(root));
+            stage.show();
+
+        } catch (Exception e) {
+            e.printStackTrace(); // Cek console untuk error lengkap
+            // Tampilkan pesan error ke layar agar Anda tahu kenapa tidak bisa diklik
+            new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR,
+                    "Gagal membuka halaman Employee: " + e.getMessage()).show();
+        }
     }
 
     // 4. CEK LOKASI

@@ -126,6 +126,11 @@
                 <Button text="📋 Tasks" onAction="#handleGoToTasks"/>
                 <Button text="📝 Leave Request" />
                 <Button text="📊 Dashboard" />
+
+                <Button fx:id="btnEmployees" text="👥 Employees (Mgr)"
+                        onAction="#handleGoToEmployees"
+                        visible="false" managed="false"
+                        style="-fx-background-color: #333; -fx-text-fill: gold; -fx-font-weight: bold;"/>
             </HBox>
         </bottom>
 
