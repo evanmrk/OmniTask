@@ -15,7 +15,9 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality; // Import Modality
 import javafx.stage.Stage;
+import javafx.scene.control.Button;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +38,7 @@ public class AttendanceController {
     @FXML private Label lblResult;
     @FXML private Button btnCheckIn;
     @FXML private Button btnCheckOut;
+    @FXML private Button btnEmployees;
 
     // --- SERVICES ---
     private SPARQLService sparqlService;
@@ -50,10 +53,22 @@ public class AttendanceController {
         geofenceService = new GeofenceService();
     }
 
-    // ==========================================
-    // 1. LOGIKA NAVIGASI (LOGIN & REGISTER)
-    // ==========================================
+    /**
+     * Method untuk mengembalikan sesi login saat kembali dari halaman lain.
+     */
+    public void restoreSession(Employee employee) {
+        if (employee != null) {
+            this.currentEmployee = employee;
+            // Panggil showDashboard agar logika pengecekan Role (if manager...) JALAN LAGI
+            showDashboard();
+        } else {
+            // Jika data hilang, paksa logout / kembali ke login
+            paneDashboard.setVisible(false);
+            paneLogin.setVisible(true);
+        }
+    }
 
+    // 1. LOGIKA LOGIN
     @FXML
     private void handleLogin() {
         String id = txtInputId.getText().trim();
@@ -71,6 +86,28 @@ public class AttendanceController {
         }
     }
 
+    // --- TAMBAHAN BARU: PINDAH KE REGISTER ---
+    @FXML
+    private void handleGoToRegister() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/RegisterView.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = new Stage();
+            stage.setTitle("Registrasi Karyawan OmniTask");
+            stage.setScene(new Scene(root));
+
+            // Blokir window utama sampai register ditutup (Modal)
+            stage.initModality(Modality.APPLICATION_MODAL);
+
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            lblError.setText("Gagal membuka halaman registrasi.");
+        }
+    }
+
+    // 2. LOGIKA LOGOUT
     @FXML
     private void handleLogout() {
         currentEmployee = null;
@@ -80,59 +117,73 @@ public class AttendanceController {
         lblResult.setText("");
     }
 
-    @FXML
-    private void handleGoToRegister() {
-        try {
-            // Load Halaman Registrasi
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/RegisterView.fxml"));
-            Parent registerRoot = loader.load();
-            
-            // Pindah Scene
-            Stage stage = (Stage) txtInputId.getScene().getWindow();
-            stage.setScene(new Scene(registerRoot, 600, 700));
-            stage.setTitle("OmniTask - Registrasi Karyawan");
-            
-        } catch (IOException e) {
-            e.printStackTrace();
-            lblError.setText("Gagal memuat halaman registrasi.");
-        }
-    }
-
-    // ==========================================
-    // 2. LOGIKA DASHBOARD
-    // ==========================================
-
+    // 3. TAMPILKAN DASHBOARD
     private void showDashboard() {
+        // 1. Tampilkan Panel Dashboard, Sembunyikan Login
         paneLogin.setVisible(false);
         paneDashboard.setVisible(true);
 
-        lblName.setText(currentEmployee.getName());
-        lblTarget.setText(currentEmployee.getDailyTarget());
+        // 2. Set Data Text
+        if (currentEmployee != null) {
+            lblName.setText(currentEmployee.getName());
+            lblTarget.setText(currentEmployee.getDailyTarget() != null ? currentEmployee.getDailyTarget() : "-");
 
-        // LOAD FOTO (PORTABLE)
-        try {
-            String path = currentEmployee.getPhotoPath();
-            if (path != null && !path.isEmpty()) {
-                File file = new File(path);
-                if (file.exists()) {
-                    imgProfile.setImage(new Image(file.toURI().toString()));
-                }
+            // 3. LOGIKA MANAGER
+            String role = currentEmployee.getRole();
+            System.out.println("Role User saat ini: " + role);
+
+            if (role != null && role.toLowerCase().contains("manager")) {
+                btnEmployees.setVisible(true);
+                btnEmployees.setManaged(true);
             } else {
-                imgProfile.setImage(null);
+                btnEmployees.setVisible(false);
+                btnEmployees.setManaged(false);
             }
-        } catch (Exception e) {
-            System.out.println("Gagal load foto: " + e.getMessage());
+
+            // 4. Load Foto
+            if (currentEmployee.getPhotoPath() != null) {
+                try {
+                    File file = new File(currentEmployee.getPhotoPath());
+                    if (file.exists()) {
+                        imgProfile.setImage(new Image(file.toURI().toString()));
+                    }
+                } catch (Exception e) {
+                    System.err.println("Gagal load foto: " + e.getMessage());
+                }
+            }
         }
 
+        // 5. Cek Lokasi
         checkLocation();
     }
 
-    // ==========================================
-    // 3. LOGIKA ABSENSI (LOCATION & CHECK IN/OUT)
-    // ==========================================
+    @FXML
+    private void handleGoToEmployees() {
+        try {
+            java.net.URL fxmlLocation = getClass().getResource("/fxml/EmployeePage.fxml");
 
+            if (fxmlLocation == null) {
+                throw new java.io.FileNotFoundException("File /fxml/EmployeePage.fxml tidak ditemukan!");
+            }
+
+            FXMLLoader loader = new FXMLLoader(fxmlLocation);
+            Parent root = loader.load();
+
+            // Pindah Scene
+            Stage stage = (Stage) btnEmployees.getScene().getWindow();
+            stage.setScene(new Scene(root));
+            stage.show();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR,
+                    "Gagal membuka halaman Employee: " + e.getMessage()).show();
+        }
+    }
+
+    // 4. CEK LOKASI
     private void checkLocation() {
-        // Simulasi Lokasi (Koordinat Medan)
+        // Simulasi Lokasi
         Location loc = new Location(3.5952, 98.6722);
         boolean isOffice = geofenceService.isWithinGeofence(loc);
 
@@ -149,22 +200,22 @@ public class AttendanceController {
         }
     }
 
+    // 5. CHECK IN
     @FXML
     private void handleCheckIn() {
         processAttendance(true);
     }
 
+    // 6. CHECK OUT
     @FXML
     private void handleCheckOut() {
         processAttendance(false);
     }
 
     private void processAttendance(boolean isCheckIn) {
-        // Jalankan di thread terpisah agar UI tidak macet
         new Thread(() -> {
             try {
                 Location loc = new Location(3.5952, 98.6722);
-                
                 if (isCheckIn) {
                     attendanceService.checkIn(currentEmployee.getId(), loc, currentEmployee.getPhotoPath());
                 } else {
@@ -184,5 +235,35 @@ public class AttendanceController {
                 });
             }
         }).start();
+    }
+
+
+    @FXML
+    private void handleGoToTasks() {
+        if (currentEmployee == null) {
+            lblError.setText("Silakan Login terlebih dahulu!");
+            return;
+        }
+
+        try {
+            java.net.URL fxmlLocation = getClass().getResource("/fxml/TaskPage.fxml");
+
+            if (fxmlLocation == null) {
+                System.err.println("ERROR: File tidak ditemukan di /fxml/TaskPage.fxml");
+                return;
+            }
+
+            FXMLLoader loader = new FXMLLoader(fxmlLocation);
+            javafx.scene.Parent root = loader.load();
+
+            // Pindah Scene
+            javafx.stage.Stage stage = (javafx.stage.Stage) btnCheckIn.getScene().getWindow();
+            stage.setScene(new javafx.scene.Scene(root));
+            stage.show();
+
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+            lblResult.setText("Error: " + e.getMessage());
+        }
     }
 }

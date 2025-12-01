@@ -19,7 +19,7 @@ public class Main extends Application {
             RDFConfig.initialize();
 
             // --- PERUBAHAN DI SINI ---
-            
+
             // Pastikan nama file SAMA PERSIS (huruf kecil semua sesuai info kamu)
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/attendance_view.fxml"));
             Parent root = loader.load();
@@ -34,10 +34,10 @@ public class Main extends Application {
 
             primaryStage.setTitle("OmniTask - Employee Attendance System");
             primaryStage.setScene(scene);
-            
+
             // Izinkan window di-resize (PENTING untuk dashboard)
-            primaryStage.setResizable(true); 
-            
+            primaryStage.setResizable(true);
+
             primaryStage.show();
 
         } catch (Exception e) {
