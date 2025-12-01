@@ -2,7 +2,7 @@ package com.omnitask.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter; // Import Baru
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,32 +24,42 @@ import com.omnitask.model.Task.TaskStatus;
 
 public class SPARQLService {
 
+    // Mengambil koneksi dari konfigurasi Project kamu
     private RDFConnection getConnection() {
         return RDFConfig.getConnection();
     }
 
     private static final String NS = RDFConfig.getNamespace();
 
+    // Pastikan prefix ini sesuai dengan yang ada di Fuseki
     private static final String PREFIXES =
             "PREFIX omni: <http://omnitask.com/ontology#> " +
-            "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> " +
-            "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ";
+                    "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> " +
+                    "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ";
 
     private static final DateTimeFormatter DATETIME_FMT = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ISO_LOCAL_DATE;
 
     // ==========================================
-    // EMPLOYEE METHODS (BARU: UNTUK LOGIN & REGISTRASI)
+    // 1. EMPLOYEE METHODS (REGISTER & LOGIN)
     // ==========================================
 
     public void saveEmployee(Employee emp) {
-        // Mencegah error jika data null, ganti dengan string kosong
-        String email = emp.getEmail() != null ? emp.getEmail() : "";
-        String dept = emp.getDepartment() != null ? emp.getDepartment() : "";
-        String role = emp.getRole() != null ? emp.getRole() : "";
+        // Sanitasi data agar tidak null
+        String email = emp.getEmail() != null ? emp.getEmail() : "-";
+        String dept = emp.getDepartment() != null ? emp.getDepartment() : "General";
+        // Default Role Logic: Jika nama mengandung Manager, set Manager
+        String role = emp.getRole();
+        if (role == null || role.isEmpty()) {
+            role = emp.getName().toLowerCase().contains("manager") ? "Manager" : "Staff";
+        }
+
         String target = emp.getDailyTarget() != null ? emp.getDailyTarget() : "-";
+
+        // Fix path Windows (backslash) menjadi slash agar aman di SPARQL
         String photo = emp.getPhotoPath() != null ? emp.getPhotoPath().replace("\\", "/") : "";
 
+        // Query INSERT DATA
         String updateString = PREFIXES +
                 "INSERT DATA { " +
                 "  omni:emp_" + emp.getId() + " rdf:type omni:Employee ; " +
@@ -58,12 +68,12 @@ public class SPARQLService {
                 "    omni:email \"" + email + "\" ; " +
                 "    omni:department \"" + dept + "\" ; " +
                 "    omni:role \"" + role + "\" ; " +
-                "    omni:photoPath \"" + photo + "\" ; " + // Path foto fisik di komputer
+                "    omni:photoPath \"" + photo + "\" ; " +
                 "    omni:dailyTarget \"" + target + "\" . " +
                 "}";
 
         executeUpdate(updateString);
-        System.out.println("✓ Employee " + emp.getName() + " saved to Fuseki.");
+        System.out.println("✓ Employee " + emp.getName() + " (ID: " + emp.getId() + ") saved successfully.");
     }
 
     public Employee getEmployeeById(String id) {
@@ -88,10 +98,18 @@ public class SPARQLService {
                 Employee emp = new Employee();
                 emp.setId(id);
                 emp.setName(soln.getLiteral("name").getString());
-                
+
                 if (soln.contains("email")) emp.setEmail(soln.getLiteral("email").getString());
                 if (soln.contains("dept")) emp.setDepartment(soln.getLiteral("dept").getString());
-                if (soln.contains("role")) emp.setRole(soln.getLiteral("role").getString());
+
+                // Pastikan Role tersetting agar tombol Manager muncul
+                if (soln.contains("role")) {
+                    emp.setRole(soln.getLiteral("role").getString());
+                } else {
+                    // Fallback jika database kosong
+                    emp.setRole(emp.getName().toLowerCase().contains("manager") ? "Manager" : "Staff");
+                }
+
                 if (soln.contains("photo")) emp.setPhotoPath(soln.getLiteral("photo").getString());
                 if (soln.contains("target")) emp.setDailyTarget(soln.getLiteral("target").getString());
 
@@ -105,7 +123,7 @@ public class SPARQLService {
     }
 
     // ==========================================
-    // ATTENDANCE METHODS
+    // 2. ATTENDANCE METHODS
     // ==========================================
 
     public void saveAttendance(Attendance attendance) {
@@ -115,36 +133,40 @@ public class SPARQLService {
             return;
         }
 
-        Model model = ModelFactory.createDefaultModel();
-        // Menggunakan omni namespace untuk URI
-        String attendanceURI = NS + "att_" + attendance.getId(); 
-        Resource attendanceRes = model.createResource(attendanceURI);
+        try {
+            Model model = ModelFactory.createDefaultModel();
+            // Menggunakan omni namespace untuk URI
+            String attendanceURI = NS + "att_" + attendance.getId();
+            Resource attendanceRes = model.createResource(attendanceURI);
 
-        Property rdfType = model.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
-        Resource typeAttendance = model.createResource(NS + "Attendance");
+            Property rdfType = model.createProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+            Resource typeAttendance = model.createResource(NS + "Attendance");
 
-        Property hasEmployeeId = model.createProperty(NS + "hasEmployeeId");
-        Property checkInTime = model.createProperty(NS + "checkInTime");
-        Property latitude = model.createProperty(NS + "latitude");
-        Property longitude = model.createProperty(NS + "longitude");
-        Property photoPath = model.createProperty(NS + "photoPath");
-        Property status = model.createProperty(NS + "status");
+            Property hasEmployeeId = model.createProperty(NS + "hasEmployeeId");
+            Property checkInTime = model.createProperty(NS + "checkInTime");
+            Property latitude = model.createProperty(NS + "latitude");
+            Property longitude = model.createProperty(NS + "longitude");
+            Property photoPath = model.createProperty(NS + "photoPath");
+            Property status = model.createProperty(NS + "status");
 
-        attendanceRes.addProperty(rdfType, typeAttendance);
-        attendanceRes.addProperty(hasEmployeeId, attendance.getEmployeeId());
-        attendanceRes.addProperty(checkInTime, attendance.getCheckInTime().format(DATETIME_FMT));
-        attendanceRes.addProperty(latitude, String.valueOf(attendance.getLocation().getLatitude()));
-        attendanceRes.addProperty(longitude, String.valueOf(attendance.getLocation().getLongitude()));
-        attendanceRes.addProperty(photoPath, attendance.getPhotoPath());
-        
-        if(attendance.getStatus() != null) {
-             attendanceRes.addProperty(status, attendance.getStatus());
-        } else {
-             attendanceRes.addProperty(status, "PRESENT");
+            attendanceRes.addProperty(rdfType, typeAttendance);
+            attendanceRes.addProperty(hasEmployeeId, attendance.getEmployeeId());
+            attendanceRes.addProperty(checkInTime, attendance.getCheckInTime().format(DATETIME_FMT));
+            attendanceRes.addProperty(latitude, String.valueOf(attendance.getLocation().getLatitude()));
+            attendanceRes.addProperty(longitude, String.valueOf(attendance.getLocation().getLongitude()));
+            attendanceRes.addProperty(photoPath, attendance.getPhotoPath());
+
+            if(attendance.getStatus() != null) {
+                attendanceRes.addProperty(status, attendance.getStatus());
+            } else {
+                attendanceRes.addProperty(status, "PRESENT");
+            }
+
+            conn.load(model);
+            System.out.println("✓ Attendance saved to Fuseki");
+        } catch (Exception e) {
+            System.err.println("Failed to save attendance: " + e.getMessage());
         }
-
-        conn.load(model);
-        System.out.println("✓ Attendance saved to Fuseki");
     }
 
     public void updateCheckOut(String attendanceId, LocalDateTime checkOutTime) {
@@ -218,11 +240,11 @@ public class SPARQLService {
                 att.setId(soln.getLiteral("id").getString());
                 att.setEmployeeId(employeeId);
                 att.setCheckInTime(LocalDateTime.parse(soln.getLiteral("checkIn").getString(), DATETIME_FMT));
-                
+
                 double lat = Double.parseDouble(soln.getLiteral("lat").getString());
                 double lon = Double.parseDouble(soln.getLiteral("lon").getString());
                 att.setLocation(new Location(lat, lon));
-                
+
                 att.setPhotoPath(soln.getLiteral("photo").getString());
                 att.setStatus(soln.getLiteral("status").getString());
 
@@ -238,7 +260,7 @@ public class SPARQLService {
     }
 
     // ==========================================
-    // TASK METHODS
+    // 3. TASK METHODS
     // ==========================================
 
     public void saveTask(Task task) {
@@ -322,10 +344,12 @@ public class SPARQLService {
     }
 
     public List<Task> getTasksForEmployee(String employeeId) {
+        // FIXED: Menambahkan ?empId ke query agar helper executeListQuery tidak error
         String queryString = PREFIXES +
-                "SELECT ?s ?title ?desc ?due ?status ?progress WHERE { " +
+                "SELECT ?s ?empId ?title ?desc ?due ?status ?progress WHERE { " +
                 "  ?s rdf:type omni:Task ; " +
                 "     omni:hasEmployeeId \"" + employeeId + "\" ; " +
+                "     omni:hasEmployeeId ?empId ; " + // Duplicate bind untuk helper
                 "     omni:title ?title ; " +
                 "     omni:description ?desc ; " +
                 "     omni:dueDate ?due ; " +
@@ -337,9 +361,10 @@ public class SPARQLService {
 
     public List<Task> getPendingTasks(String employeeId) {
         String queryString = PREFIXES +
-                "SELECT ?s ?title ?desc ?due ?status ?progress WHERE { " +
+                "SELECT ?s ?empId ?title ?desc ?due ?status ?progress WHERE { " +
                 "  ?s rdf:type omni:Task ; " +
                 "     omni:hasEmployeeId \"" + employeeId + "\" ; " +
+                "     omni:hasEmployeeId ?empId ; " +
                 "     omni:title ?title ; " +
                 "     omni:description ?desc ; " +
                 "     omni:dueDate ?due ; " +
@@ -353,9 +378,10 @@ public class SPARQLService {
     public List<Task> getTodayTasks(String employeeId) {
         String today = LocalDate.now().toString();
         String queryString = PREFIXES +
-                "SELECT ?s ?title ?desc ?due ?status ?progress WHERE { " +
+                "SELECT ?s ?empId ?title ?desc ?due ?status ?progress WHERE { " +
                 "  ?s rdf:type omni:Task ; " +
                 "     omni:hasEmployeeId \"" + employeeId + "\" ; " +
+                "     omni:hasEmployeeId ?empId ; " +
                 "     omni:title ?title ; " +
                 "     omni:description ?desc ; " +
                 "     omni:dueDate ?due ; " +
@@ -367,13 +393,18 @@ public class SPARQLService {
     }
 
     // ==========================================
-    // HELPER METHODS
+    // 4. HELPER METHODS
     // ==========================================
 
     private void executeUpdate(String sparql) {
+        // Menggunakan try-with-resources untuk memastikan koneksi ditutup
         try (RDFConnection conn = RDFConfig.getConnection()) {
+            if (conn == null) {
+                System.err.println("CRITICAL: Connection to Fuseki is NULL. Check RDFConfig.");
+                return;
+            }
             conn.update(sparql);
-            System.out.println("SPARQL Update Success");
+            System.out.println("SPARQL Update Executed Successfully.");
         } catch (Exception e) {
             System.err.println("SPARQL Update Failed: " + e.getMessage());
             e.printStackTrace();
@@ -391,7 +422,14 @@ public class SPARQLService {
                 Task t = new Task();
                 String uri = soln.getResource("s").getURI();
                 t.setId(uri.substring(uri.lastIndexOf("task_") + 5));
-                t.setEmployeeId(soln.getLiteral("empId") != null ? soln.getLiteral("empId").getString() : "");
+
+                // Safety check jika empId tidak terpilih di query
+                if (soln.contains("empId")) {
+                    t.setEmployeeId(soln.getLiteral("empId").getString());
+                } else {
+                    t.setEmployeeId(""); // Atau ambil dari parameter method
+                }
+
                 t.setTitle(soln.getLiteral("title").getString());
                 t.setDescription(soln.getLiteral("desc").getString());
                 t.setDueDate(LocalDate.parse(soln.getLiteral("due").getString(), DATE_FMT));

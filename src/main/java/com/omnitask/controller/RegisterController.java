@@ -12,8 +12,9 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
-import javafx.scene.image.ImageView; // Jangan lupa import UUID
+import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage; // Import Stage
 
 public class RegisterController {
 
@@ -28,7 +29,7 @@ public class RegisterController {
     @FXML
     public void initialize() {
         sparqlService = new SPARQLService();
-        
+
         // --- LOGIKA AUTO GENERATE ID ---
         generateNewId();
     }
@@ -37,10 +38,10 @@ public class RegisterController {
     private void generateNewId() {
         // Buat UUID acak, ambil 5 karakter pertama, jadikan huruf besar
         String uniqueCode = UUID.randomUUID().toString().substring(0, 5).toUpperCase();
-        
+
         // Gabungkan dengan prefix "EMP-"
-        String autoId = "EMP-" + uniqueCode; 
-        
+        String autoId = "EMP-" + uniqueCode;
+
         // Masukkan ke TextField
         txtId.setText(autoId);
     }
@@ -58,7 +59,7 @@ public class RegisterController {
         FileChooser fc = new FileChooser();
         fc.setTitle("Pilih Foto Profil");
         fc.getExtensionFilters().add(
-            new FileChooser.ExtensionFilter("Image Files", "*.jpg", "*.png", "*.jpeg")
+                new FileChooser.ExtensionFilter("Image Files", "*.jpg", "*.png", "*.jpeg")
         );
         selectedFile = fc.showOpenDialog(null);
         if (selectedFile != null) {
@@ -78,15 +79,15 @@ public class RegisterController {
 
         try {
             // Ambil ID yang sudah digenerate otomatis tadi
-            String id = txtId.getText().trim(); 
+            String id = txtId.getText().trim();
             String name = txtName.getText().trim();
-            
+
             // 1. COPY FOTO
             String originalName = selectedFile.getName();
             String ext = "";
             int i = originalName.lastIndexOf('.');
             if (i > 0) ext = originalName.substring(i);
-            
+
             String newFileName = id + ext;
             File destinationFile = new File(getProjectPhotoFolder() + newFileName);
 
@@ -99,23 +100,35 @@ public class RegisterController {
             emp.setName(name);
             emp.setPhotoPath(finalPathForDB);
             emp.setDailyTarget("-"); // Default
-            
+
             sparqlService.saveEmployee(emp);
 
             // 3. SUKSES & RESET
             lblStatus.setText("Sukses! ID " + id + " terdaftar.");
             lblStatus.setStyle("-fx-text-fill: green;");
-            
+
             txtName.clear();
             imgPreview.setImage(null);
             selectedFile = null;
-            
+
             // Generate ID baru lagi untuk karyawan berikutnya
-            generateNewId(); 
+            generateNewId();
 
         } catch (Exception e) {
             e.printStackTrace();
             lblStatus.setText("Gagal: " + e.getMessage());
+        }
+    }
+
+    // --- TAMBAHAN BARU: KEMBALI KE LOGIN ---
+    @FXML
+    private void handleBackToLogin() {
+        try {
+            // Menutup window register saat ini
+            Stage stage = (Stage) txtId.getScene().getWindow();
+            stage.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

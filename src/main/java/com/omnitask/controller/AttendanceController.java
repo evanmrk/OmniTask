@@ -15,9 +15,9 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality; // Import Modality
 import javafx.stage.Stage;
 import javafx.scene.control.Button;
-import com.omnitask.controller.EmployeeController;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,8 +53,6 @@ public class AttendanceController {
         geofenceService = new GeofenceService();
     }
 
-    // Masukkan ini ke dalam class AttendanceController
-
     /**
      * Method untuk mengembalikan sesi login saat kembali dari halaman lain.
      */
@@ -88,6 +86,27 @@ public class AttendanceController {
         }
     }
 
+    // --- TAMBAHAN BARU: PINDAH KE REGISTER ---
+    @FXML
+    private void handleGoToRegister() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/RegisterView.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = new Stage();
+            stage.setTitle("Registrasi Karyawan OmniTask");
+            stage.setScene(new Scene(root));
+
+            // Blokir window utama sampai register ditutup (Modal)
+            stage.initModality(Modality.APPLICATION_MODAL);
+
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            lblError.setText("Gagal membuka halaman registrasi.");
+        }
+    }
+
     // 2. LOGIKA LOGOUT
     @FXML
     private void handleLogout() {
@@ -109,20 +128,29 @@ public class AttendanceController {
             lblName.setText(currentEmployee.getName());
             lblTarget.setText(currentEmployee.getDailyTarget() != null ? currentEmployee.getDailyTarget() : "-");
 
-            // 3. LOGIKA MANAGER (Perbaikan agar tidak hilang)
+            // 3. LOGIKA MANAGER
             String role = currentEmployee.getRole();
-            System.out.println("Role User saat ini: " + role); // Debugging di console
+            System.out.println("Role User saat ini: " + role);
 
             if (role != null && role.toLowerCase().contains("manager")) {
                 btnEmployees.setVisible(true);
-                btnEmployees.setManaged(true); // Agar tombol mengambil tempat (tidak layout 0px)
+                btnEmployees.setManaged(true);
             } else {
                 btnEmployees.setVisible(false);
                 btnEmployees.setManaged(false);
             }
 
-            // 4. Load Foto (Optional, copy dari kode lama Anda)
-            // ... kode foto ...
+            // 4. Load Foto
+            if (currentEmployee.getPhotoPath() != null) {
+                try {
+                    File file = new File(currentEmployee.getPhotoPath());
+                    if (file.exists()) {
+                        imgProfile.setImage(new Image(file.toURI().toString()));
+                    }
+                } catch (Exception e) {
+                    System.err.println("Gagal load foto: " + e.getMessage());
+                }
+            }
         }
 
         // 5. Cek Lokasi
@@ -132,7 +160,6 @@ public class AttendanceController {
     @FXML
     private void handleGoToEmployees() {
         try {
-            // Pastikan path sesuai dengan struktur folder Anda (/fxml/...)
             java.net.URL fxmlLocation = getClass().getResource("/fxml/EmployeePage.fxml");
 
             if (fxmlLocation == null) {
@@ -142,20 +169,13 @@ public class AttendanceController {
             FXMLLoader loader = new FXMLLoader(fxmlLocation);
             Parent root = loader.load();
 
-            // Ambil controller EmployeePage & Kirim data Manager saat ini
-            EmployeeController empController = loader.getController();
-            if (empController != null) {
-                empController.setManager(currentEmployee);
-            }
-
             // Pindah Scene
             Stage stage = (Stage) btnEmployees.getScene().getWindow();
             stage.setScene(new Scene(root));
             stage.show();
 
         } catch (Exception e) {
-            e.printStackTrace(); // Cek console untuk error lengkap
-            // Tampilkan pesan error ke layar agar Anda tahu kenapa tidak bisa diklik
+            e.printStackTrace();
             new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR,
                     "Gagal membuka halaman Employee: " + e.getMessage()).show();
         }
@@ -226,8 +246,6 @@ public class AttendanceController {
         }
 
         try {
-            // PERBAIKAN DI SINI:
-            // Menggunakan "/fxml/" karena nama folder di screenshot Anda adalah 'fxml'
             java.net.URL fxmlLocation = getClass().getResource("/fxml/TaskPage.fxml");
 
             if (fxmlLocation == null) {
@@ -237,10 +255,6 @@ public class AttendanceController {
 
             FXMLLoader loader = new FXMLLoader(fxmlLocation);
             javafx.scene.Parent root = loader.load();
-
-            // Ambil controller TaskPage & kirim data employee
-            TaskController taskController = loader.getController();
-            taskController.setEmployee(currentEmployee);
 
             // Pindah Scene
             javafx.stage.Stage stage = (javafx.stage.Stage) btnCheckIn.getScene().getWindow();

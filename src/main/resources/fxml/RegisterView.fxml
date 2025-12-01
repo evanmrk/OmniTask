@@ -13,8 +13,8 @@
 
     <VBox spacing="5" maxWidth="300" alignment="CENTER_LEFT">
         <Label text="Employee ID (Otomatis):" style="-fx-font-size: 12px;"/>
-        
-        <TextField fx:id="txtId" promptText="ID Otomatis" disable="true" 
+
+        <TextField fx:id="txtId" promptText="ID Otomatis" disable="true"
                    style="-fx-opacity: 1; -fx-background-color: #e0e0e0; -fx-font-weight: bold; -fx-text-fill: black;"/>
     </VBox>
     <TextField fx:id="txtName" promptText="Nama Lengkap" maxWidth="300"/>
@@ -26,5 +26,7 @@
     </VBox>
 
     <Button text="SIMPAN DATA" onAction="#handleSave" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 14px;"/>
+
+    <Hyperlink text="Kembali ke Login" onAction="#handleBackToLogin" style="-fx-text-fill: grey; -fx-underline: true;"/>
 
 </VBox>
