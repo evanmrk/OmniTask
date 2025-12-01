@@ -26,5 +26,5 @@
     </VBox>
 
     <Button text="SIMPAN DATA" onAction="#handleSave" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 14px;"/>
-
+    <Hyperlink text="Kembali ke Login" onAction="#handleBackToLogin" style="-fx-text-fill: #666; -fx-underline: true;"/>
 </VBox>

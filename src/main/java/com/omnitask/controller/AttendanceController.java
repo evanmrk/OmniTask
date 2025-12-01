@@ -50,20 +50,10 @@ public class AttendanceController {
         geofenceService = new GeofenceService();
     }
 
-    // Masukkan ini ke dalam class AttendanceController
+    // ==========================================
+    // 1. LOGIKA NAVIGASI (LOGIN & REGISTER)
+    // ==========================================
 
-    /**
-     * Method untuk mengembalikan sesi login saat kembali dari halaman lain.
-     */
-    public void restoreSession(Employee employee) {
-        if (employee != null) {
-            this.currentEmployee = employee;
-            // Panggil method showDashboard() yang sudah ada untuk menyembunyikan login & menampilkan menu utama
-            showDashboard();
-        }
-    }
-
-    // 1. LOGIKA LOGIN
     @FXML
     private void handleLogin() {
         String id = txtInputId.getText().trim();
@@ -81,7 +71,6 @@ public class AttendanceController {
         }
     }
 
-    // 2. LOGIKA LOGOUT
     @FXML
     private void handleLogout() {
         currentEmployee = null;
@@ -91,7 +80,28 @@ public class AttendanceController {
         lblResult.setText("");
     }
 
-    // 3. TAMPILKAN DASHBOARD
+    @FXML
+    private void handleGoToRegister() {
+        try {
+            // Load Halaman Registrasi
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/RegisterView.fxml"));
+            Parent registerRoot = loader.load();
+            
+            // Pindah Scene
+            Stage stage = (Stage) txtInputId.getScene().getWindow();
+            stage.setScene(new Scene(registerRoot, 600, 700));
+            stage.setTitle("OmniTask - Registrasi Karyawan");
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+            lblError.setText("Gagal memuat halaman registrasi.");
+        }
+    }
+
+    // ==========================================
+    // 2. LOGIKA DASHBOARD
+    // ==========================================
+
     private void showDashboard() {
         paneLogin.setVisible(false);
         paneDashboard.setVisible(true);
@@ -108,7 +118,7 @@ public class AttendanceController {
                     imgProfile.setImage(new Image(file.toURI().toString()));
                 }
             } else {
-                imgProfile.setImage(null); // Kosongkan jika tidak ada foto
+                imgProfile.setImage(null);
             }
         } catch (Exception e) {
             System.out.println("Gagal load foto: " + e.getMessage());
@@ -117,9 +127,12 @@ public class AttendanceController {
         checkLocation();
     }
 
-    // 4. CEK LOKASI
+    // ==========================================
+    // 3. LOGIKA ABSENSI (LOCATION & CHECK IN/OUT)
+    // ==========================================
+
     private void checkLocation() {
-        // Simulasi Lokasi
+        // Simulasi Lokasi (Koordinat Medan)
         Location loc = new Location(3.5952, 98.6722);
         boolean isOffice = geofenceService.isWithinGeofence(loc);
 
@@ -136,22 +149,22 @@ public class AttendanceController {
         }
     }
 
-    // 5. CHECK IN
     @FXML
     private void handleCheckIn() {
         processAttendance(true);
     }
 
-    // 6. CHECK OUT
     @FXML
     private void handleCheckOut() {
         processAttendance(false);
     }
 
     private void processAttendance(boolean isCheckIn) {
+        // Jalankan di thread terpisah agar UI tidak macet
         new Thread(() -> {
             try {
                 Location loc = new Location(3.5952, 98.6722);
+                
                 if (isCheckIn) {
                     attendanceService.checkIn(currentEmployee.getId(), loc, currentEmployee.getPhotoPath());
                 } else {
