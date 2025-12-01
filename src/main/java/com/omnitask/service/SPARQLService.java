@@ -181,6 +181,38 @@ public class SPARQLService {
         executeUpdate(updateString);
     }
 
+    public List<Employee> getAllEmployees() {
+        String queryString = PREFIXES +
+                "SELECT ?id ?name ?role ?dept ?target WHERE { " +
+                "  ?s rdf:type omni:Employee ; " +
+                "     omni:hasID ?id ; " +
+                "     omni:name ?name . " +
+                "  OPTIONAL { ?s omni:role ?role } " +
+                "  OPTIONAL { ?s omni:department ?dept } " +
+                "  OPTIONAL { ?s omni:dailyTarget ?target } " +
+                "}";
+
+        List<Employee> list = new ArrayList<>();
+        try (org.apache.jena.rdfconnection.RDFConnection conn = com.omnitask.config.RDFConfig.getConnection();
+             org.apache.jena.query.QueryExecution qExec = conn.query(queryString)) {
+
+            org.apache.jena.query.ResultSet rs = qExec.execSelect();
+            while (rs.hasNext()) {
+                org.apache.jena.query.QuerySolution soln = rs.next();
+                Employee emp = new Employee();
+                emp.setId(soln.getLiteral("id").getString());
+                emp.setName(soln.getLiteral("name").getString());
+                if (soln.contains("role")) emp.setRole(soln.getLiteral("role").getString());
+                if (soln.contains("dept")) emp.setDepartment(soln.getLiteral("dept").getString());
+                if (soln.contains("target")) emp.setDailyTarget(soln.getLiteral("target").getString());
+                list.add(emp);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
     public Attendance getTodayAttendance(String employeeId) {
         String today = LocalDate.now().toString(); // YYYY-MM-DD
 
