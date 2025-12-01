@@ -130,7 +130,7 @@
                     <Insets bottom="10" left="20" right="20" top="10" />
                 </padding>
                 <Button style="-fx-background-color: #5c1a1b; -fx-text-fill: white;" text="🏠 Attendance" />
-                <Button text="📋 Tasks" />
+                <Button text="📋 Tasks" onAction="#handleGoToTasks"/>
                 <Button text="📝 Leave Request" />
                 <Button text="📊 Dashboard" />
             </HBox>

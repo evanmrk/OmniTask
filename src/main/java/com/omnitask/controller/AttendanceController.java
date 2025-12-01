@@ -185,4 +185,40 @@ public class AttendanceController {
             }
         }).start();
     }
+
+
+    @FXML
+    private void handleGoToTasks() {
+        if (currentEmployee == null) {
+            lblError.setText("Silakan Login terlebih dahulu!");
+            return;
+        }
+
+        try {
+            // PERBAIKAN DI SINI:
+            // Menggunakan "/fxml/" karena nama folder di screenshot Anda adalah 'fxml'
+            java.net.URL fxmlLocation = getClass().getResource("/fxml/TaskPage.fxml");
+
+            if (fxmlLocation == null) {
+                System.err.println("ERROR: File tidak ditemukan di /fxml/TaskPage.fxml");
+                return;
+            }
+
+            FXMLLoader loader = new FXMLLoader(fxmlLocation);
+            javafx.scene.Parent root = loader.load();
+
+            // Ambil controller TaskPage & kirim data employee
+            TaskController taskController = loader.getController();
+            taskController.setEmployee(currentEmployee);
+
+            // Pindah Scene
+            javafx.stage.Stage stage = (javafx.stage.Stage) btnCheckIn.getScene().getWindow();
+            stage.setScene(new javafx.scene.Scene(root));
+            stage.show();
+
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+            lblResult.setText("Error: " + e.getMessage());
+        }
+    }
 }
