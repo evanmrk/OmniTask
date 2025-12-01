@@ -5,6 +5,7 @@ import com.omnitask.model.Location;
 import com.omnitask.service.AttendanceService;
 import com.omnitask.service.GeofenceService;
 import com.omnitask.service.SPARQLService;
+import com.omnitask.service.SessionManager;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -51,6 +52,23 @@ public class AttendanceController {
         sparqlService = new SPARQLService();
         attendanceService = new AttendanceService();
         geofenceService = new GeofenceService();
+
+        // --- LOGIKA BARU: CEK SESI OTOMATIS ---
+        if (SessionManager.isLoggedIn()) {
+            // Jika di dompet ada ID, ambil datanya & langsung ke Dashboard
+            this.currentEmployee = SessionManager.getCurrentUser();
+            showDashboard();
+        } else {
+            // Jika kosong, tampilkan Login
+            showLoginState();
+        }
+    }
+
+    private void showLoginState() {
+        paneDashboard.setVisible(false);
+        paneLogin.setVisible(true);
+        txtInputId.clear();
+        lblResult.setText("");
     }
 
     // Masukkan ini ke dalam class AttendanceController
@@ -74,13 +92,14 @@ public class AttendanceController {
     @FXML
     private void handleLogin() {
         String id = txtInputId.getText().trim();
-        if (id.isEmpty()) {
-            lblError.setText("Masukkan ID dulu!"); return;
-        }
+        // ... validasi kosong ...
 
         Employee emp = sparqlService.getEmployeeById(id);
         if (emp != null) {
-            currentEmployee = emp;
+            // SIMPAN KE SESSION MANAGER
+            SessionManager.login(emp);
+
+            this.currentEmployee = emp;
             showDashboard();
             lblError.setText("");
         } else {
@@ -91,11 +110,11 @@ public class AttendanceController {
     // 2. LOGIKA LOGOUT
     @FXML
     private void handleLogout() {
-        currentEmployee = null;
-        paneDashboard.setVisible(false);
-        paneLogin.setVisible(true);
-        txtInputId.clear();
-        lblResult.setText("");
+        // HAPUS SESI
+        SessionManager.logout();
+
+        this.currentEmployee = null;
+        showLoginState();
     }
 
     // 3. TAMPILKAN DASHBOARD

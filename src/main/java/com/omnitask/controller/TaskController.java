@@ -195,28 +195,20 @@ public class TaskController {
     @FXML
     private void handleBackToAttendance() {
         try {
-            // PERBAIKAN: Sesuaikan dengan nama file di screenshot Anda
-            // Folder: /fxml/
-            // File: attendance_view.fxml
-            java.net.URL fxmlLocation = getClass().getResource("/fxml/attendance_view.fxml");
-
-            if (fxmlLocation == null) {
-                System.err.println("ERROR: File tidak ditemukan di /fxml/attendance_view.fxml");
-                return;
-            }
-
-            FXMLLoader loader = new FXMLLoader(fxmlLocation);
+            // Cukup load FXML saja
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/attendance_view.fxml"));
             Parent root = loader.load();
 
-            // Pindah Scene
+            // TIDAK PERLU lagi baris seperti: attController.restoreSession(...)
+            // Karena saat AttendanceController dimuat (initialize),
+            // dia akan otomatis cek SessionManager.
+
             Stage stage = (Stage) taskContainer.getScene().getWindow();
             stage.setScene(new Scene(root));
             stage.show();
 
         } catch (IOException e) {
             e.printStackTrace();
-            // Tampilkan alert jika gagal
-            new Alert(Alert.AlertType.ERROR, "Gagal kembali: " + e.getMessage()).show();
         }
     }
 
