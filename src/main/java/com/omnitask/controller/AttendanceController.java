@@ -7,12 +7,18 @@ import com.omnitask.service.GeofenceService;
 import com.omnitask.service.SPARQLService;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
 import java.io.File;
+import java.io.IOException;
 
 public class AttendanceController {
 
@@ -42,6 +48,19 @@ public class AttendanceController {
         sparqlService = new SPARQLService();
         attendanceService = new AttendanceService();
         geofenceService = new GeofenceService();
+    }
+
+    // Masukkan ini ke dalam class AttendanceController
+
+    /**
+     * Method untuk mengembalikan sesi login saat kembali dari halaman lain.
+     */
+    public void restoreSession(Employee employee) {
+        if (employee != null) {
+            this.currentEmployee = employee;
+            // Panggil method showDashboard() yang sudah ada untuk menyembunyikan login & menampilkan menu utama
+            showDashboard();
+        }
     }
 
     // 1. LOGIKA LOGIN
@@ -152,5 +171,41 @@ public class AttendanceController {
                 });
             }
         }).start();
+    }
+
+
+    @FXML
+    private void handleGoToTasks() {
+        if (currentEmployee == null) {
+            lblError.setText("Silakan Login terlebih dahulu!");
+            return;
+        }
+
+        try {
+            // PERBAIKAN DI SINI:
+            // Menggunakan "/fxml/" karena nama folder di screenshot Anda adalah 'fxml'
+            java.net.URL fxmlLocation = getClass().getResource("/fxml/TaskPage.fxml");
+
+            if (fxmlLocation == null) {
+                System.err.println("ERROR: File tidak ditemukan di /fxml/TaskPage.fxml");
+                return;
+            }
+
+            FXMLLoader loader = new FXMLLoader(fxmlLocation);
+            javafx.scene.Parent root = loader.load();
+
+            // Ambil controller TaskPage & kirim data employee
+            TaskController taskController = loader.getController();
+            taskController.setEmployee(currentEmployee);
+
+            // Pindah Scene
+            javafx.stage.Stage stage = (javafx.stage.Stage) btnCheckIn.getScene().getWindow();
+            stage.setScene(new javafx.scene.Scene(root));
+            stage.show();
+
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+            lblResult.setText("Error: " + e.getMessage());
+        }
     }
 }
