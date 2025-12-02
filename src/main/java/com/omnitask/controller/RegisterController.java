@@ -123,4 +123,16 @@ public class RegisterController {
             e.printStackTrace();
         }
     }
+
+    // --- TAMBAHAN BARU: KEMBALI KE LOGIN ---
+    @FXML
+    private void handleBackToLogin() {
+        try {
+            // Menutup window register saat ini
+            Stage stage = (Stage) txtId.getScene().getWindow();
+            stage.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

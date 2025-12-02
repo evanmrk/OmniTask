@@ -2,6 +2,7 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Hyperlink?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
@@ -16,29 +17,31 @@
 
 <StackPane style="-fx-background-color: #f4f4f4;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.omnitask.controller.AttendanceController">
 
-    <VBox fx:id="paneLogin" alignment="CENTER" maxHeight="300" maxWidth="400" spacing="20" style="-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, 0);">
+    <VBox fx:id="paneLogin" alignment="CENTER" maxHeight="350" maxWidth="400" spacing="20" style="-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, 0);">
         <padding>
             <Insets bottom="30" left="30" right="30" top="30" />
         </padding>
-        
+
         <Label text="OmniTask Login" textFill="#5c1a1b">
             <font>
                 <Font name="System Bold" size="24.0" />
             </font>
         </Label>
-        
+
         <Label text="Silakan masukkan ID Karyawan" textFill="#666666" />
-        
+
         <TextField fx:id="txtInputId" promptText="Contoh: EMP-A1B2C" style="-fx-font-size: 14px; -fx-padding: 10; -fx-border-color: #ddd; -fx-border-radius: 5; -fx-background-radius: 5;" />
-        
+
         <Button onAction="#handleLogin" style="-fx-background-color: #5c1a1b; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 10 20; -fx-cursor: hand;" text="MASUK SISTEM" />
-        
+
+        <Hyperlink text="Belum punya akun? Daftar Karyawan Baru" onAction="#handleGoToRegister" style="-fx-text-fill: #5c1a1b; -fx-underline: true;"/>
+
         <Label fx:id="lblError" text="" textFill="RED" />
     </VBox>
 
 
     <BorderPane fx:id="paneDashboard" visible="false">
-        
+
         <top>
             <HBox alignment="CENTER_LEFT" spacing="20" style="-fx-background-color: #5c1a1b;">
                 <padding>
@@ -89,7 +92,7 @@
                     </HBox>
 
                     <HBox spacing="20">
-                        
+
                         <VBox spacing="10" style="-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 0);" HBox.hgrow="ALWAYS">
                             <padding>
                                 <Insets bottom="20" left="20" right="20" top="20" />
@@ -100,15 +103,15 @@
                                     <Font name="System Bold" size="18" />
                                 </font>
                             </Label>
-                            
+
                             <Label fx:id="lblLocationStatus" style="-fx-font-size: 14px;" text="Mengecek Lokasi..." />
                             <Label fx:id="lblResult" style="-fx-font-weight: bold;" text="" wrapText="true" />
                         </VBox>
 
                         <VBox alignment="CENTER" minWidth="200" spacing="10">
-                             <Button fx:id="btnCheckIn" disable="true" onAction="#handleCheckIn" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-pref-width: 200; -fx-padding: 15;" text="✓ CLOCK IN" />
-                             
-                             <Button fx:id="btnCheckOut" disable="true" onAction="#handleCheckOut" style="-fx-background-color: #d9534f; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-pref-width: 200; -fx-padding: 15;" text="✗ CHECK OUT" />
+                            <Button fx:id="btnCheckIn" disable="true" onAction="#handleCheckIn" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-pref-width: 200; -fx-padding: 15;" text="✓ CLOCK IN" />
+
+                            <Button fx:id="btnCheckOut" disable="true" onAction="#handleCheckOut" style="-fx-background-color: #d9534f; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-pref-width: 200; -fx-padding: 15;" text="✗ CHECK OUT" />
                         </VBox>
 
                     </HBox>
