@@ -54,6 +54,7 @@ public class SPARQLService {
         // Fix path Windows (\) menjadi Unix (/) agar aman di RDF
         String photo = emp.getPhotoPath() != null ? emp.getPhotoPath().replace("\\", "/") : "";
 
+        // Query INSERT DATA
         String updateString = PREFIXES +
                 "INSERT DATA { " +
                 "  omni:emp_" + emp.getId() + " rdf:type omni:Employee ; " +
@@ -67,7 +68,7 @@ public class SPARQLService {
                 "}";
 
         executeUpdate(updateString);
-        System.out.println("✓ Employee " + emp.getName() + " saved to Fuseki.");
+        System.out.println("✓ Employee " + emp.getName() + " (ID: " + emp.getId() + ") saved successfully.");
     }
 
     public Employee getEmployeeById(String id) {
@@ -95,7 +96,15 @@ public class SPARQLService {
 
                 if (soln.contains("email")) emp.setEmail(soln.getLiteral("email").getString());
                 if (soln.contains("dept")) emp.setDepartment(soln.getLiteral("dept").getString());
-                if (soln.contains("role")) emp.setRole(soln.getLiteral("role").getString());
+
+                // Pastikan Role tersetting agar tombol Manager muncul
+                if (soln.contains("role")) {
+                    emp.setRole(soln.getLiteral("role").getString());
+                } else {
+                    // Fallback jika database kosong
+                    emp.setRole(emp.getName().toLowerCase().contains("manager") ? "Manager" : "Staff");
+                }
+
                 if (soln.contains("photo")) emp.setPhotoPath(soln.getLiteral("photo").getString());
                 if (soln.contains("target")) emp.setDailyTarget(soln.getLiteral("target").getString());
 
@@ -214,8 +223,11 @@ public class SPARQLService {
             attendanceRes.addProperty(status, "PRESENT");
         }
 
-        conn.load(model);
-        System.out.println("✓ Attendance saved to Fuseki");
+            conn.load(model);
+            System.out.println("✓ Attendance saved to Fuseki");
+        } catch (Exception e) {
+            System.err.println("Failed to save attendance: " + e.getMessage());
+        }
     }
 
     public void updateCheckOut(String attendanceId, LocalDateTime checkOutTime) {
@@ -363,10 +375,12 @@ public class SPARQLService {
     }
 
     public List<Task> getTasksForEmployee(String employeeId) {
+        // FIXED: Menambahkan ?empId ke query agar helper executeListQuery tidak error
         String queryString = PREFIXES +
-                "SELECT ?s ?title ?desc ?due ?status ?progress WHERE { " +
+                "SELECT ?s ?empId ?title ?desc ?due ?status ?progress WHERE { " +
                 "  ?s rdf:type omni:Task ; " +
                 "     omni:hasEmployeeId \"" + employeeId + "\" ; " +
+                "     omni:hasEmployeeId ?empId ; " + // Duplicate bind untuk helper
                 "     omni:title ?title ; " +
                 "     omni:description ?desc ; " +
                 "     omni:dueDate ?due ; " +
@@ -378,9 +392,10 @@ public class SPARQLService {
 
     public List<Task> getPendingTasks(String employeeId) {
         String queryString = PREFIXES +
-                "SELECT ?s ?title ?desc ?due ?status ?progress WHERE { " +
+                "SELECT ?s ?empId ?title ?desc ?due ?status ?progress WHERE { " +
                 "  ?s rdf:type omni:Task ; " +
                 "     omni:hasEmployeeId \"" + employeeId + "\" ; " +
+                "     omni:hasEmployeeId ?empId ; " +
                 "     omni:title ?title ; " +
                 "     omni:description ?desc ; " +
                 "     omni:dueDate ?due ; " +
@@ -394,9 +409,10 @@ public class SPARQLService {
     public List<Task> getTodayTasks(String employeeId) {
         String today = LocalDate.now().toString();
         String queryString = PREFIXES +
-                "SELECT ?s ?title ?desc ?due ?status ?progress WHERE { " +
+                "SELECT ?s ?empId ?title ?desc ?due ?status ?progress WHERE { " +
                 "  ?s rdf:type omni:Task ; " +
                 "     omni:hasEmployeeId \"" + employeeId + "\" ; " +
+                "     omni:hasEmployeeId ?empId ; " +
                 "     omni:title ?title ; " +
                 "     omni:description ?desc ; " +
                 "     omni:dueDate ?due ; " +
@@ -412,9 +428,14 @@ public class SPARQLService {
     // ==========================================
 
     private void executeUpdate(String sparql) {
+        // Menggunakan try-with-resources untuk memastikan koneksi ditutup
         try (RDFConnection conn = RDFConfig.getConnection()) {
+            if (conn == null) {
+                System.err.println("CRITICAL: Connection to Fuseki is NULL. Check RDFConfig.");
+                return;
+            }
             conn.update(sparql);
-            System.out.println("SPARQL Update Success");
+            System.out.println("SPARQL Update Executed Successfully.");
         } catch (Exception e) {
             System.err.println("SPARQL Update Failed: " + e.getMessage());
             e.printStackTrace();

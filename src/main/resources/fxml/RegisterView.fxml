@@ -38,4 +38,6 @@
                 style="-fx-background-color: #ddd; -fx-text-fill: black; -fx-cursor: hand;"/>
     </HBox>
 
+    <Hyperlink text="Kembali ke Login" onAction="#handleBackToLogin" style="-fx-text-fill: grey; -fx-underline: true;"/>
+
 </VBox>
