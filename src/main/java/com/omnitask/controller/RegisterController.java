@@ -20,10 +20,8 @@ public class RegisterController {
 
     @FXML private TextField txtId;
     @FXML private TextField txtName;
-    @FXML private ImageView imgPreview;
     @FXML private Label lblStatus;
 
-    private File selectedFile;
     private SPARQLService sparqlService;
 
     @FXML
@@ -46,64 +44,38 @@ public class RegisterController {
     }
 
     @FXML
-    private void handleBrowse() {
-        FileChooser fc = new FileChooser();
-        fc.setTitle("Pilih Foto Profil");
-        fc.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Image Files", "*.jpg", "*.png", "*.jpeg")
-        );
-        selectedFile = fc.showOpenDialog(null);
-        if (selectedFile != null) {
-            imgPreview.setImage(new Image(selectedFile.toURI().toString()));
-            lblStatus.setText("Foto dipilih.");
-            lblStatus.setStyle("-fx-text-fill: blue;");
-        }
-    }
-
-    @FXML
     private void handleSave() {
-        if (txtName.getText().isEmpty() || selectedFile == null) {
-            lblStatus.setText("Nama dan Foto wajib diisi!");
+        if (txtName.getText().isEmpty()) {
+            lblStatus.setText("Nama wajib diisi!");
             lblStatus.setStyle("-fx-text-fill: red;");
             return;
         }
+
 
         try {
             String id = txtId.getText().trim();
             String name = txtName.getText().trim();
 
-            // 1. Simpan Foto
-            String originalName = selectedFile.getName();
-            String ext = "";
-            int i = originalName.lastIndexOf('.');
-            if (i > 0) ext = originalName.substring(i);
+            // LOGIKA COPY FILE DIHAPUS SEMUA DI SINI
 
-            String newFileName = id + ext;
-            File destinationFile = new File(getProjectPhotoFolder() + newFileName);
-
-            Files.copy(selectedFile.toPath(), destinationFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            String finalPathForDB = destinationFile.getAbsolutePath().replace("\\", "/");
-
-            // 2. Simpan ke Database RDF
+            // Simpan ke Database RDF
             Employee emp = new Employee();
             emp.setId(id);
             emp.setName(name);
-            emp.setPhotoPath(finalPathForDB);
-            // Role & Dept bisa ditambahkan input fieldnya nanti jika mau
+
+            // Set "-" (strip) karena foto dihapus, agar database tidak error
+            emp.setPhotoPath("-");
+
             emp.setRole("Staff");
             emp.setDepartment("General");
             emp.setDailyTarget("-");
 
             sparqlService.saveEmployee(emp);
 
-            // 3. Feedback Sukses
             lblStatus.setText("Sukses! ID " + id + " tersimpan.");
             lblStatus.setStyle("-fx-text-fill: green;");
 
-            // Reset Form untuk input berikutnya (Opsional, atau bisa langsung close)
             txtName.clear();
-            imgPreview.setImage(null);
-            selectedFile = null;
             generateNewId();
 
         } catch (Exception e) {
@@ -124,15 +96,4 @@ public class RegisterController {
         }
     }
 
-    // --- TAMBAHAN BARU: KEMBALI KE LOGIN ---
-    @FXML
-    private void handleBackToLogin() {
-        try {
-            // Menutup window register saat ini
-            Stage stage = (Stage) txtId.getScene().getWindow();
-            stage.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }

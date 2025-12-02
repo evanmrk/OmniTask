@@ -7,7 +7,6 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -33,8 +32,6 @@
         <TextField fx:id="txtInputId" promptText="Contoh: EMP-A1B2C" style="-fx-font-size: 14px; -fx-padding: 10; -fx-border-color: #ddd; -fx-border-radius: 5; -fx-background-radius: 5;" />
 
         <Button onAction="#handleLogin" style="-fx-background-color: #5c1a1b; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 10 20; -fx-cursor: hand;" text="MASUK SISTEM" />
-
-        <Hyperlink text="Belum punya akun? Daftar Karyawan Baru" onAction="#handleGoToRegister" style="-fx-text-fill: #5c1a1b; -fx-underline: true;"/>
 
         <Label fx:id="lblError" text="" textFill="RED" />
     </VBox>
@@ -75,12 +72,6 @@
                     </padding>
 
                     <HBox spacing="20">
-                        <VBox alignment="CENTER" minWidth="200" style="-fx-background-color: white; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 0); -fx-background-radius: 10;">
-                            <padding><Insets bottom="10" left="10" right="10" top="10" /></padding>
-                            <Label style="-fx-font-weight: bold;" text="Foto Profil" />
-                            <ImageView fx:id="imgProfile" fitHeight="150" fitWidth="150" preserveRatio="true" />
-                        </VBox>
-
                         <VBox style="-fx-background-color: white; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 0); -fx-background-radius: 10;" HBox.hgrow="ALWAYS">
                             <padding><Insets bottom="20" left="20" right="20" top="20" /></padding>
                             <Label text="Target / Tugas Hari Ini" textFill="#5c1a1b">
@@ -109,7 +100,7 @@
                         </VBox>
 
                         <VBox alignment="CENTER" minWidth="200" spacing="10">
-                            <Button fx:id="btnCheckIn" disable="true" onAction="#handleCheckIn" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-pref-width: 200; -fx-padding: 15;" text="✓ CLOCK IN" />
+                            <Button fx:id="btnCheckIn" disable="true" onAction="#handleCheckIn" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-pref-width: 200; -fx-padding: 15;" text="✓ CHECK IN" />
 
                             <Button fx:id="btnCheckOut" disable="true" onAction="#handleCheckOut" style="-fx-background-color: #d9534f; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-pref-width: 200; -fx-padding: 15;" text="✗ CHECK OUT" />
                         </VBox>
@@ -127,10 +118,10 @@
                 </padding>
                 <Button style="-fx-background-color: #5c1a1b; -fx-text-fill: white;" text="🏠 Attendance" />
                 <Button text="📋 Tasks" onAction="#handleGoToTasks"/>
-                <Button text="📝 Leave Request" />
-                <Button text="📊 Dashboard" />
+<!--                <Button text="📝 Leave Request" />-->
+<!--                <Button text="📊 Dashboard" />-->
 
-                <Button fx:id="btnEmployees" text="👥 Employees (Mgr)"
+                <Button fx:id="btnEmployees" text="👥 Employees"
                         onAction="#handleGoToEmployees"
                         visible="false" managed="false"
                         style="-fx-background-color: #333; -fx-text-fill: gold; -fx-font-weight: bold;"/>

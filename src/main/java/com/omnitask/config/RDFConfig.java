@@ -2,50 +2,44 @@ package com.omnitask.config;
 
 import org.apache.jena.rdfconnection.RDFConnection;
 import org.apache.jena.rdfconnection.RDFConnectionFactory;
+import org.apache.jena.query.Dataset;
 import org.apache.jena.rdf.model.*;
 
 public class RDFConfig {
 
-    // HAPUS variabel static connection
-    // private static RDFConnection connection; <--- HAPUS INI
-
+    private static RDFConnection connection; // Ini hanya dipakai untuk proses initialize awal
     private static final String FUSEKI_URL = "http://localhost:3030/omnitask";
     private static final String NS = "http://omnitask.com/ontology#";
 
     public static void initialize() {
-        // Kita buka koneksi sementara hanya untuk cek status server
-        try (RDFConnection conn = getConnection()) { 
-            
+        try {
+            // Connect to Fuseki server (Untuk keperluan cek awal)
+            connection = RDFConnectionFactory.connect(FUSEKI_URL);
             System.out.println("✓ Connected to Fuseki server at " + FUSEKI_URL);
 
             // Test connection
-            conn.querySelect("SELECT * WHERE { ?s ?p ?o } LIMIT 1", rs -> {
+            connection.querySelect("SELECT * WHERE { ?s ?p ?o } LIMIT 1", rs -> {
                 System.out.println("✓ Fuseki connection test successful");
             });
 
             // Load ontology if needed
-            loadOntologyIfNeeded(conn);
+            loadOntologyIfNeeded();
 
         } catch (Exception e) {
             System.err.println("✗ Error connecting to Fuseki: " + e.getMessage());
-            System.err.println("Make sure Fuseki is running at http://localhost:3030 and dataset 'omnitask' exists.");
+            System.err.println("Make sure Fuseki is running at http://localhost:3030");
             e.printStackTrace();
         }
     }
 
-    // --- BAGIAN TERPENTING: SELALU BUAT KONEKSI BARU ---
-    public static RDFConnection getConnection() {
-        return RDFConnectionFactory.connect(FUSEKI_URL);
-    }
-
-    private static void loadOntologyIfNeeded(RDFConnection conn) {
+    private static void loadOntologyIfNeeded() {
         try {
             // Check if ontology already exists
-            boolean hasData = conn.queryAsk("ASK { ?s ?p ?o }");
+            boolean hasData = connection.queryAsk("ASK { ?s ?p ?o }");
 
             if (!hasData) {
                 System.out.println("Loading base ontology...");
-                createBaseOntology(conn);
+                createBaseOntology();
             } else {
                 System.out.println("✓ Ontology already exists in Fuseki");
             }
@@ -54,37 +48,50 @@ public class RDFConfig {
         }
     }
 
-    private static void createBaseOntology(RDFConnection conn) {
+    private static void createBaseOntology() {
         Model model = ModelFactory.createDefaultModel();
 
         // Create base classes
         Resource employeeClass = model.createResource(NS + "Employee");
         Resource attendanceClass = model.createResource(NS + "Attendance");
         Resource taskClass = model.createResource(NS + "Task");
-        
-        // Create properties (SAYA UPDATE SESUAI FITUR BARU)
-        model.createProperty(NS + "hasID");
-        model.createProperty(NS + "name");           // diganti jadi simple 'name' sesuai query insert kita
-        model.createProperty(NS + "photoPath");      // PENTING: Untuk foto portable
-        model.createProperty(NS + "dailyTarget");    // PENTING: Untuk target kerja
-        
-        model.createProperty(NS + "checkInTime");
-        model.createProperty(NS + "checkOutTime");
-        model.createProperty(NS + "latitude");
-        model.createProperty(NS + "longitude");
-        model.createProperty(NS + "status");
+        Resource leaveRequestClass = model.createResource(NS + "LeaveRequest");
+
+        // Create properties
+        model.createProperty(NS + "hasEmployeeId");
+        model.createProperty(NS + "hasName");
+        model.createProperty(NS + "hasEmail");
+        model.createProperty(NS + "hasDepartment");
+        model.createProperty(NS + "hasRole");
+        model.createProperty(NS + "hasFaceEncoding");
+        model.createProperty(NS + "hasCheckInTime");
+        model.createProperty(NS + "hasCheckOutTime");
+        model.createProperty(NS + "hasGeoLocation");
+        model.createProperty(NS + "hasTaskStatus");
+        model.createProperty(NS + "hasProgress");
 
         // Upload to Fuseki
-        conn.load(model);
+        connection.load(model);
         System.out.println("✓ Base ontology created in Fuseki");
     }
+
+    // --- BAGIAN INI YANG DIPERBAIKI ---
+    public static RDFConnection getConnection() {
+        // KITA UBAH DI SINI:
+        // Jangan return variabel 'connection' (static) karena itu sudah ditutup oleh SPARQLService.
+        // Kita harus buat koneksi BARU setiap kali diminta.
+        return RDFConnectionFactory.connect(FUSEKI_URL);
+    }
+    // ----------------------------------
 
     public static String getNamespace() {
         return NS;
     }
 
     public static void shutdown() {
-        // Tidak perlu close manual disini karena kita close per request
-        System.out.println("RDFConfig shutdown signal received.");
+        if (connection != null) {
+            connection.close();
+            System.out.println("✓ Fuseki connection closed");
+        }
     }
 }

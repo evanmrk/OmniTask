@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.*?>
-<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 
 <VBox xmlns="http://javafx.com/javafx"
@@ -23,10 +22,6 @@
         <TextField fx:id="txtName" promptText="Masukkan Nama Lengkap" maxWidth="300"/>
     </VBox>
 
-    <VBox alignment="CENTER" spacing="10" style="-fx-padding: 10; -fx-border-color: #ddd; -fx-border-radius: 5; -fx-border-style: dashed;">
-        <ImageView fx:id="imgPreview" fitWidth="120" fitHeight="120" preserveRatio="true"/>
-        <Button text="📂 Pilih Foto Profil..." onAction="#handleBrowse"/>
-    </VBox>
 
     <Label fx:id="lblStatus" text="" style="-fx-font-size: 11px;"/>
 
@@ -38,6 +33,6 @@
                 style="-fx-background-color: #ddd; -fx-text-fill: black; -fx-cursor: hand;"/>
     </HBox>
 
-    <Hyperlink text="Kembali ke Login" onAction="#handleBackToLogin" style="-fx-text-fill: grey; -fx-underline: true;"/>
+<!--    <Hyperlink text="Kembali ke Login" onAction="#handleBackToLogin" style="-fx-text-fill: grey; -fx-underline: true;"/>-->
 
 </VBox>

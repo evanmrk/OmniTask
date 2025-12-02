@@ -25,7 +25,7 @@ public class TaskController {
 
     @FXML private Label lblName;
     @FXML private VBox taskContainer;
-
+    @FXML private Button btnEmployees;
     private SPARQLService sparqlService;
     private Employee currentEmployee;
 
@@ -41,6 +41,18 @@ public class TaskController {
     public void setEmployee(Employee employee) {
         this.currentEmployee = employee;
         lblName.setText(employee.getName());
+
+        // --- 2. LOGIKA CEK ROLE (Copy dari AttendanceController) ---
+        String role = employee.getRole();
+        if (role != null && role.toLowerCase().contains("manager")) {
+            btnEmployees.setVisible(true);
+            btnEmployees.setManaged(true);
+        } else {
+            btnEmployees.setVisible(false);
+            btnEmployees.setManaged(false);
+        }
+        // -----------------------------------------------------------
+
         loadDailyTasks();
     }
 
@@ -219,5 +231,27 @@ public class TaskController {
         alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+
+    @FXML
+    private void handleGoToEmployees() {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/EmployeePage.fxml"));
+            javafx.scene.Parent root = loader.load();
+
+            // Oper data Manager
+            EmployeeController empController = loader.getController();
+            if (empController != null) {
+                empController.setManager(currentEmployee);
+            }
+
+            // Ganti Scene
+            javafx.scene.Scene currentScene = btnEmployees.getScene();
+            currentScene.setRoot(root);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

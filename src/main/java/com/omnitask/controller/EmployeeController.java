@@ -4,6 +4,7 @@ import com.omnitask.model.Attendance;
 import com.omnitask.model.Employee;
 import com.omnitask.model.Task;
 import com.omnitask.service.SPARQLService;
+import com.omnitask.service.SessionManager;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -27,51 +28,56 @@ public class EmployeeController {
     @FXML private TableView<Employee> tableEmployee;
     @FXML private TableColumn<Employee, String> colId;
     @FXML private TableColumn<Employee, String> colName;
-    @FXML private TableColumn<Employee, String> colDept;
     @FXML private TableColumn<Employee, String> colRole;
     @FXML private TableColumn<Employee, String> colTarget;
 
     private SPARQLService sparqlService;
-    private Employee currentManager; // Data manajer yang sedang login
-
-
-
+    private Employee currentManager;
 
     @FXML
     public void initialize() {
+        // --- PERBAIKAN UTAMA DI SINI ---
+        // Kita harus membuat instance service dulu sebelum dipakai!
         sparqlService = new SPARQLService();
 
-        // Mapping ini mencocokkan kolom Tabel dengan Method Getter di Employee.java
+        if (SessionManager.isLoggedIn()) {
+            this.currentManager = SessionManager.getCurrentUser();
 
-        // Col ID -> getId()
-        colId.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getId()));
+            // Set Label Nama di Pojok Kanan Atas
+            if (lblManagerName != null) {
+                lblManagerName.setText(currentManager.getName());
+            }
+        }
 
-        // Col Name -> getName()
-        colName.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getName()));
+        // Setup Kolom Tabel
+        colId.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getId()));
+        colName.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getName()));
+        colRole.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getRole()));
 
-        // Col Dept -> getDepartment()
-        colDept.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getDepartment()));
-
-        // Col Role -> getRole()
-        colRole.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getRole()));
-
-        // Col Target -> getDailyTarget() (Hanya jika kolom ini ada di FXML)
+        // Tambahan: Setup kolom Target agar datanya muncul (karena variabelnya ada di FXML)
         if (colTarget != null) {
-            colTarget.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getDailyTarget()));
+            colTarget.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDailyTarget()));
         }
 
         loadData();
     }
 
     private void loadData() {
-        java.util.List<Employee> employees = sparqlService.getAllEmployees();
-        javafx.collections.ObservableList<Employee> data = javafx.collections.FXCollections.observableArrayList(employees);
-        tableEmployee.setItems(data);
+        try {
+            List<Employee> employees = sparqlService.getAllEmployees();
+            ObservableList<Employee> data = FXCollections.observableArrayList(employees);
+            tableEmployee.setItems(data);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Gagal load data: " + e.getMessage());
+        }
     }
 
     public void setManager(Employee manager) {
         this.currentManager = manager;
-        lblManagerName.setText("Manager: " + manager.getName());
+        if (lblManagerName != null) {
+            lblManagerName.setText(manager.getName());
+        }
     }
 
     @FXML
@@ -79,9 +85,8 @@ public class EmployeeController {
         loadData();
     }
 
-
     // ==========================================
-    // FITUR 1: BUAT TASK (POPUP)
+    // FITUR 1: BUAT TASK (POPUP) - (Assign Task Lama/Simple)
     // ==========================================
     @FXML
     private void handleCreateTask() {
@@ -91,7 +96,6 @@ public class EmployeeController {
             return;
         }
 
-        // Buat Dialog Input Custom
         Dialog<Task> dialog = new Dialog<>();
         dialog.setTitle("Assign Task");
         dialog.setHeaderText("Buat Tugas untuk: " + selectedEmp.getName());
@@ -118,16 +122,15 @@ public class EmployeeController {
 
         dialog.getDialogPane().setContent(grid);
 
-        // Konversi hasil input menjadi Objek Task
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == loginButtonType) {
                 Task t = new Task();
-                t.setId(UUID.randomUUID().toString().substring(0, 8)); // Generate random ID
+                t.setId(UUID.randomUUID().toString().substring(0, 8));
                 t.setEmployeeId(selectedEmp.getId());
                 t.setTitle(txtTitle.getText());
                 t.setDescription(txtDesc.getText());
                 t.setDueDate(datePicker.getValue());
-                t.setStatus(Task.TaskStatus.PENDING); // Default status
+                t.setStatus(Task.TaskStatus.PENDING);
                 t.setProgressPercentage(0);
                 return t;
             }
@@ -143,33 +146,69 @@ public class EmployeeController {
     }
 
     // ==========================================
-    // FITUR 2: EDIT ABSENSI (POPUP)
+    // FITUR 2: EDIT ABSENSI (REAL DATABASE UPDATE)
     // ==========================================
     @FXML
     private void handleEditAttendance() {
+        // 1. Ambil karyawan yang dipilih
         Employee selectedEmp = tableEmployee.getSelectionModel().getSelectedItem();
         if (selectedEmp == null) {
             showAlert("Pilih Karyawan", "Pilih karyawan yang mau diedit absensinya!");
             return;
         }
 
-        // Di sini idealnya kita load dulu absensi hari ini
+        // 2. Cek status saat ini (untuk default value di dialog)
         Attendance att = sparqlService.getTodayAttendance(selectedEmp.getId());
+        String currentStatus = (att != null) ? att.getStatus() : "ALPHA"; // Default jika belum absen
 
-        // Form Input Sederhana
-        TextInputDialog td = new TextInputDialog(att != null ? att.getStatus() : "PRESENT");
+        // 3. Tampilkan Dialog
+        TextInputDialog td = new TextInputDialog(currentStatus);
         td.setTitle("Edit Status Absensi");
-        td.setHeaderText("Ubah status absensi hari ini untuk: " + selectedEmp.getName());
+        td.setHeaderText("Set status absensi hari ini untuk: " + selectedEmp.getName());
         td.setContentText("Masukkan Status (PRESENT / SICK / LEAVE / ALPHA):");
 
         Optional<String> result = td.showAndWait();
+
+        // 4. Proses Simpan
         result.ifPresent(newStatus -> {
-            // Logic update ke database (SPARQL Update manual string)
-            // Anda mungkin perlu membuat method updateAttendanceStatus di SPARQLService
-            // Untuk demo ini kita simulasi print saja
-            System.out.println("Mengupdate status " + selectedEmp.getName() + " menjadi " + newStatus);
-            showAlert("Info", "Fitur Edit Absensi (Simulasi): Status diubah ke " + newStatus);
+            try {
+                // Panggil Service baru yang sudah kita buat
+                sparqlService.setAttendanceStatus(selectedEmp.getId(), newStatus.toUpperCase());
+
+                showAlert("Sukses", "Status absensi " + selectedEmp.getName() +
+                        " berhasil diubah menjadi: " + newStatus.toUpperCase());
+            } catch (Exception e) {
+                e.printStackTrace();
+                showAlert("Error", "Gagal update absensi: " + e.getMessage());
+            }
         });
+    }
+
+    // --- FITUR BARU: HAPUS KARYAWAN ---
+    @FXML
+    private void handleDeleteEmployee() {
+        Employee selectedEmp = tableEmployee.getSelectionModel().getSelectedItem();
+
+        if (selectedEmp == null) {
+            showAlert("Pilih Karyawan", "Silakan klik nama karyawan yang ingin dihapus.");
+            return;
+        }
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Konfirmasi Hapus");
+        alert.setHeaderText("Hapus akun: " + selectedEmp.getName() + "?");
+        alert.setContentText("Tindakan ini tidak dapat dibatalkan. ID: " + selectedEmp.getId());
+
+        if (alert.showAndWait().get() == ButtonType.OK) {
+            try {
+                sparqlService.deleteEmployee(selectedEmp.getId());
+                showAlert("Sukses", "Akun karyawan berhasil dihapus.");
+                loadData();
+            } catch (Exception e) {
+                e.printStackTrace();
+                showAlert("Error", "Gagal menghapus data: " + e.getMessage());
+            }
+        }
     }
 
     // ==========================================
@@ -181,17 +220,11 @@ public class EmployeeController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/attendance_view.fxml"));
             Parent root = loader.load();
 
-            AttendanceController attController = loader.getController();
-            attController.restoreSession(this.currentManager); // Bawa data manager balik
-
-//            Stage stage = (Stage) tableEmployee.getScene().getWindow();
-//            stage.setScene(new Scene(root));
-//            stage.show();
-
             Scene currentScene = tableEmployee.getScene();
             currentScene.setRoot(root);
         } catch (Exception e) {
             e.printStackTrace();
+            new Alert(Alert.AlertType.ERROR, "Gagal kembali ke Dashboard: " + e.getMessage()).show();
         }
     }
 
@@ -202,33 +235,72 @@ public class EmployeeController {
         alert.showAndWait();
     }
 
-
-    // Registrasi
-
+    // --- REGISTRASI ---
     @FXML
     private void handleRegisterEmployee() {
         try {
-            // 1. Load FXML RegisterView
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/RegisterView.fxml")); // Pastikan path benar
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/RegisterView.fxml"));
             Parent root = loader.load();
 
-            // 2. Buat Stage Baru (Jendela Pop-up)
             Stage registerStage = new Stage();
             registerStage.setTitle("Registrasi Karyawan Baru");
             registerStage.setScene(new Scene(root));
-
-            // 3. Set Modality: Agar user TIDAK BISA klik window belakang sebelum ini ditutup
             registerStage.initModality(Modality.APPLICATION_MODAL);
-
-            // 4. Tampilkan dan Tunggu sampai ditutup
             registerStage.showAndWait();
 
-            // 5. Setelah ditutup, otomatis Refresh Tabel agar data baru muncul
             loadData();
-
         } catch (Exception e) {
             e.printStackTrace();
             showAlert("Error", "Gagal membuka form registrasi: " + e.getMessage());
+        }
+    }
+
+    // --- TASK MANAGER (POPUP LENGKAP) ---
+    @FXML
+    private void handleManageTasks() {
+        Employee selectedEmp = tableEmployee.getSelectionModel().getSelectedItem();
+
+        if (selectedEmp == null) {
+            showAlert("Pilih Karyawan", "Silakan klik salah satu nama karyawan di tabel terlebih dahulu.");
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ManagerTaskView.fxml"));
+            Parent root = loader.load();
+
+            ManagerTaskController taskController = loader.getController();
+            taskController.setTargetEmployee(selectedEmp);
+
+            Stage stage = new Stage();
+            stage.setTitle("Task Manager - " + selectedEmp.getName());
+            stage.setScene(new Scene(root));
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.showAndWait();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert("Error", "Gagal membuka task manager: " + e.getMessage());
+        }
+    }
+
+    // --- NAVIGASI KE HALAMAN TASK PRIBADI ---
+    @FXML
+    private void handleGoToTasks() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/TaskPage.fxml"));
+            Parent root = loader.load();
+
+            TaskController taskController = loader.getController();
+            // Ambil dari Session agar aman (tidak null)
+            taskController.setEmployee(SessionManager.getCurrentUser());
+
+            Scene currentScene = tableEmployee.getScene();
+            currentScene.setRoot(root);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            new Alert(Alert.AlertType.ERROR, "Gagal ke Tasks: " + e.getMessage()).show();
         }
     }
 }

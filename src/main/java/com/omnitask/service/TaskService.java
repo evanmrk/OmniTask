@@ -13,9 +13,7 @@ public class TaskService {
         this.sparqlService = new SPARQLService();
     }
 
-    /**
-     * Creates a new task
-     */
+
     public Task createTask(String employeeId, String title, String description, LocalDate dueDate) {
         Task task = new Task(
                 UUID.randomUUID().toString(),
@@ -29,9 +27,7 @@ public class TaskService {
         return task;
     }
 
-    /**
-     * Updates task progress
-     */
+
     public void updateProgress(String taskId, int progress) throws Exception {
         Task task = sparqlService.getTask(taskId);
         if (task == null) {
@@ -48,9 +44,7 @@ public class TaskService {
         sparqlService.updateTask(task);
     }
 
-    /**
-     * Updates task status
-     */
+
     public void updateStatus(String taskId, Task.TaskStatus status) throws Exception {
         Task task = sparqlService.getTask(taskId);
         if (task == null) {
@@ -61,9 +55,7 @@ public class TaskService {
         sparqlService.updateTask(task);
     }
 
-    /**
-     * Adds proof of work
-     */
+
     public void addProofOfWork(String taskId, String proofPath) throws Exception {
         Task task = sparqlService.getTask(taskId);
         if (task == null) {
@@ -74,9 +66,7 @@ public class TaskService {
         sparqlService.updateTask(task);
     }
 
-    /**
-     * Adds daily notes
-     */
+
     public void addDailyNotes(String taskId, String notes) throws Exception {
         Task task = sparqlService.getTask(taskId);
         if (task == null) {
@@ -94,30 +84,22 @@ public class TaskService {
         sparqlService.updateTask(task);
     }
 
-    /**
-     * Gets all tasks for an employee
-     */
+
     public List<Task> getTasksForEmployee(String employeeId) {
         return sparqlService.getTasksForEmployee(employeeId);
     }
 
-    /**
-     * Gets today's tasks
-     */
+
     public List<Task> getTodayTasks(String employeeId) {
         return sparqlService.getTodayTasks(employeeId);
     }
 
-    /**
-     * Gets pending tasks
-     */
+
     public List<Task> getPendingTasks(String employeeId) {
         return sparqlService.getPendingTasks(employeeId);
     }
 
-    /**
-     * Deletes a task
-     */
+
     public void deleteTask(String taskId) {
         sparqlService.deleteTask(taskId);
     }
