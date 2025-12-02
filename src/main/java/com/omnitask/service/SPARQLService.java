@@ -64,12 +64,10 @@ public class SPARQLService {
                 "    omni:dailyTarget \"" + target + "\" . " +
                 "}";
 
-        // PERUBAHAN PENTING DI SINI:
         try {
             executeUpdate(updateString);
             System.out.println("✓ Employee " + emp.getName() + " saved to Fuseki.");
         } catch (Exception e) {
-            // LEMPAR ULANG ERRORNYA KE REGISTER CONTROLLER
             throw new RuntimeException("Gagal Simpan ke DB: " + e.getMessage());
         }
     }
@@ -140,11 +138,11 @@ public class SPARQLService {
                 QuerySolution soln = rs.next();
                 Employee emp = new Employee();
 
-                // 1. Ambil ID & Name (Wajib ada)
+                // 1. Ambil ID & Name
                 emp.setId(soln.getLiteral("id").getString());
                 emp.setName(soln.getLiteral("name").getString());
 
-                // 2. Ambil Role (Handling Empty String "")
+                // 2. Ambil Role
                 if (soln.contains("role")) {
                     String val = soln.getLiteral("role").getString();
                     emp.setRole(val.isEmpty() ? "-" : val);
@@ -178,6 +176,17 @@ public class SPARQLService {
 
         System.out.println("TOTAL DATA: " + list.size());
         return list;
+    }
+
+
+    public void deleteEmployee(String employeeId) {
+        String updateString = PREFIXES +
+                "DELETE WHERE { " +
+                "  omni:emp_" + employeeId + " ?p ?o ." +
+                "}";
+
+        executeUpdate(updateString);
+        System.out.println("✓ Employee " + employeeId + " deleted from Fuseki.");
     }
 
     // ==========================================
@@ -235,14 +244,16 @@ public class SPARQLService {
     }
 
     public Attendance getTodayAttendance(String employeeId) {
-        String today = LocalDate.now().toString(); // YYYY-MM-DD
+        String today = LocalDate.now().toString();
 
+        // PERHATIKAN BARIS omni:latitude DAN omni:longitude DIPISAH
         String queryString = PREFIXES +
                 "SELECT ?id ?checkIn ?lat ?lon ?photo ?status ?checkOut WHERE { " +
                 "  ?s rdf:type omni:Attendance ; " +
                 "     omni:hasEmployeeId \"" + employeeId + "\" ; " +
                 "     omni:checkInTime ?checkIn ; " +
-                "     omni:latitude ?lat ?lon ; " +
+                "     omni:latitude ?lat ; " +
+                "     omni:longitude ?lon ; " +
                 "     omni:photoPath ?photo ; " +
                 "     omni:status ?status . " +
                 "  BIND(STRAFTER(STR(?s), \"att_\") AS ?id) " +
@@ -261,8 +272,8 @@ public class SPARQLService {
                 att.setEmployeeId(employeeId);
                 att.setCheckInTime(LocalDateTime.parse(soln.getLiteral("checkIn").getString(), DATETIME_FMT));
 
-                // Ambil Lat/Lon
-                if(soln.contains("lat")) {
+                // Ambil Lat/Lon (Pastikan nama variabel ?lat dan ?lon sesuai query)
+                if(soln.contains("lat") && soln.contains("lon")) {
                     double lat = Double.parseDouble(soln.getLiteral("lat").getString());
                     double lon = Double.parseDouble(soln.getLiteral("lon").getString());
                     att.setLocation(new Location(lat, lon));
@@ -366,9 +377,14 @@ public class SPARQLService {
         executeUpdate(updateString);
     }
 
+    /**
+     * Versi Khusus untuk ManagerTaskView.
+     * Mengambil task beserta NOTES/ALASAN jika ada.
+     */
     public List<Task> getTasksForEmployee(String employeeId) {
+        // UPDATE QUERY: Tambahkan ?notes di SELECT dan OPTIONAL di bawah
         String queryString = PREFIXES +
-                "SELECT ?s ?title ?desc ?due ?status ?progress WHERE { " +
+                "SELECT ?s ?title ?desc ?due ?status ?progress ?notes WHERE { " +
                 "  ?s rdf:type omni:Task ; " +
                 "     omni:hasEmployeeId \"" + employeeId + "\" ; " +
                 "     omni:title ?title ; " +
@@ -376,8 +392,45 @@ public class SPARQLService {
                 "     omni:dueDate ?due ; " +
                 "     omni:taskStatus ?status ; " +
                 "     omni:progress ?progress . " +
+                "  OPTIONAL { ?s omni:notes ?notes } " + // <--- INI PENTING: Ambil Notes
                 "}";
-        return executeListQuery(queryString);
+
+        List<Task> tasks = new ArrayList<>();
+
+        // Kita tidak pakai executeListQuery karena perlu mapping khusus untuk notes
+        try (RDFConnection conn = RDFConfig.getConnection();
+             QueryExecution qExec = conn.query(queryString)) {
+
+            ResultSet rs = qExec.execSelect();
+            while (rs.hasNext()) {
+                QuerySolution soln = rs.next();
+                Task t = new Task();
+
+                // Ambil ID dari URI
+                String uri = soln.getResource("s").getURI();
+                t.setId(uri.substring(uri.lastIndexOf("task_") + 5));
+
+                t.setEmployeeId(employeeId);
+                t.setTitle(soln.getLiteral("title").getString());
+                t.setDescription(soln.getLiteral("desc").getString());
+                t.setDueDate(LocalDate.parse(soln.getLiteral("due").getString(), DATE_FMT));
+                t.setStatus(TaskStatus.valueOf(soln.getLiteral("status").getString()));
+                t.setProgressPercentage(soln.getLiteral("progress").getInt());
+
+                // --- LOGIC AMBIL ALASAN ---
+                if (soln.contains("notes")) {
+                    String noteVal = soln.getLiteral("notes").getString();
+                    t.setDailyNotes(noteVal.isEmpty() ? "-" : noteVal);
+                } else {
+                    t.setDailyNotes("-");
+                }
+
+                tasks.add(t);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return tasks;
     }
 
     public List<Task> getPendingTasks(String employeeId) {
@@ -449,5 +502,42 @@ public class SPARQLService {
             e.printStackTrace();
         }
         return tasks;
+    }
+
+    // --- FITUR MANAGER: EDIT/SET STATUS ABSENSI ---
+    public void setAttendanceStatus(String employeeId, String newStatus) {
+        // 1. Cek dulu apakah hari ini sudah ada record absensi?
+        Attendance existing = getTodayAttendance(employeeId);
+
+        if (existing != null) {
+            // KASUS A: SUDAH ADA DATA -> Update Statusnya saja
+            String updateString = PREFIXES +
+                    "DELETE { ?s omni:status ?oldStatus } " +
+                    "INSERT { ?s omni:status \"" + newStatus + "\" } " +
+                    "WHERE { " +
+                    "  BIND(omni:att_" + existing.getId() + " AS ?s) " +
+                    "  ?s omni:status ?oldStatus " +
+                    "}";
+            executeUpdate(updateString);
+            System.out.println("✓ Status updated to " + newStatus + " for ID " + existing.getId());
+
+        } else {
+            // KASUS B: BELUM ADA DATA -> Buat Record Baru
+            // Ini PENTING agar karyawan tidak bisa Check-In lagi (karena data hari ini jadi 'ada')
+            Attendance newAtt = new Attendance();
+            String attId = "ATT-MGR-" + java.util.UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+
+            newAtt.setId(attId);
+            newAtt.setEmployeeId(employeeId);
+            newAtt.setCheckInTime(LocalDateTime.now()); // Set waktu sekarang
+            newAtt.setStatus(newStatus);
+
+            // Set data dummy karena diinput manual oleh Manager
+            newAtt.setLocation(new Location(0, 0, "Set by Manager"));
+            newAtt.setPhotoPath("-");
+
+            saveAttendance(newAtt); // Simpan sebagai absen baru
+            System.out.println("✓ New attendance record created by Manager: " + newStatus);
+        }
     }
 }

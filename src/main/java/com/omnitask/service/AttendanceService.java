@@ -1,6 +1,7 @@
 package com.omnitask.service;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime; // Import baru untuk jam
 import java.util.UUID;
 
 import com.omnitask.model.Attendance;
@@ -8,71 +9,75 @@ import com.omnitask.model.Location;
 
 public class AttendanceService {
 
-    // Hapus BiometricService
     private GeofenceService geofenceService;
     private SPARQLService sparqlService;
 
+    // --- KONFIGURASI JAM MASUK (Bisa diubah sesuai kebutuhan) ---
+    private static final LocalTime JAM_MASUK = LocalTime.of(9, 0); // 09:00 Pagi
+
     public AttendanceService() {
-        // Hapus inisialisasi BiometricService
         this.geofenceService = new GeofenceService();
         this.sparqlService = new SPARQLService();
     }
 
     public Attendance checkIn(String employeeId, Location location, String photoPath) throws Exception {
-        // --- BAGIAN BIOMETRIC DIHAPUS ---
-        
-        // 1. Validasi Lokasi (Wajib di Kantor)
-        boolean isLocationValid = geofenceService.isWithinGeofence(location);
-
-        if (!isLocationValid) {
-            throw new Exception("Location Error! Anda berada di luar radius kantor.");
-        }
-
-        // 2. Cek apakah sudah absen hari ini?
+        // 1. Cek apakah sudah absen hari ini?
         Attendance existing = sparqlService.getTodayAttendance(employeeId);
         if (existing != null) {
-            throw new Exception("Anda sudah melakukan Check-In hari ini pada jam " +
-                    existing.getCheckInTime().toLocalTime());
+            // Jika statusnya bukan SICK/PERMIT, tolak check-in ganda
+            throw new Exception("Anda sudah absen hari ini (Status: " + existing.getStatus() +
+                    ") pada jam " + existing.getCheckInTime().toLocalTime());
         }
 
-        // 3. Buat Object Attendance Baru
+        // 2. Buat Data Absensi Baru
         Attendance attendance = new Attendance();
-        attendance.setId(UUID.randomUUID().toString());
-        attendance.setEmployeeId(employeeId);
-        attendance.setCheckInTime(LocalDateTime.now());
-        attendance.setLocation(location);
-        
-        // Simpan path foto (yang diambil dari database profil) ke data absen sebagai histori
-        attendance.setPhotoPath(photoPath); 
-        
-        // Status LATE/ON_TIME dihitung otomatis di dalam Model Attendance saat setCheckInTime
+        String attId = "ATT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        LocalDateTime now = LocalDateTime.now();
 
-        // 4. Simpan ke Database Fuseki
+        attendance.setId(attId);
+        attendance.setEmployeeId(employeeId);
+        attendance.setCheckInTime(now);
+        attendance.setLocation(location);
+        attendance.setPhotoPath(photoPath);
+
+        // --- 3. LOGIKA PENENTUAN STATUS (PRESENT vs LATE) ---
+        // Jika waktu check-in (now) lebih dari jam 09:00, maka LATE
+        if (now.toLocalTime().isAfter(JAM_MASUK)) {
+            attendance.setStatus("LATE");
+        } else {
+            attendance.setStatus("PRESENT");
+        }
+
+        // 4. Simpan ke Database
         sparqlService.saveAttendance(attendance);
+        System.out.println("DEBUG: Check-In Sukses (" + attendance.getStatus() + ") ID: " + attId);
 
         return attendance;
     }
 
     public Attendance checkOut(String employeeId, Location location, String photoPath) throws Exception {
-        // --- BAGIAN BIOMETRIC DIHAPUS ---
+        Attendance existing = sparqlService.getTodayAttendance(employeeId);
 
-        // Opsional: Anda bisa menambahkan validasi lokasi juga di sini jika mau
-        // boolean isLocationValid = geofenceService.isWithinGeofence(location);
-        // if (!isLocationValid) throw new Exception("Harus di kantor untuk Check-Out!");
-
-        // 1. Cari data Check-In hari ini
-        Attendance attendance = sparqlService.getTodayAttendance(employeeId);
-        if (attendance == null) {
-            throw new Exception("Data Check-In hari ini tidak ditemukan. Tidak bisa Check-Out.");
+        // Jika tidak ada data hari ini (return null), berarti user belum Check-In
+        if (existing == null) {
+            System.err.println("DEBUG: Gagal CheckOut. Tidak ada data CheckIn hari ini untuk: " + employeeId);
+            throw new Exception("Gagal: Data Check-In hari ini tidak ditemukan. Harap Check-In dulu.");
         }
 
-        // 2. Update waktu pulang
-        attendance.setCheckOutTime(LocalDateTime.now());
-        attendance.setStatus("COMPLETED");
+        // 2. Cek apakah SUDAH Check-Out sebelumnya?
+        if (existing.getCheckOutTime() != null) {
+            throw new Exception("Anda sudah Check-Out sebelumnya pada jam " + existing.getCheckOutTime().toLocalTime());
+        }
 
-        // 3. Update ke Database
-        sparqlService.updateCheckOut(attendance.getId(), attendance.getCheckOutTime());
+        // 3. Update Waktu Check-Out
+        LocalDateTime now = LocalDateTime.now();
+        existing.setCheckOutTime(now);
 
-        return attendance;
+        // 4. Update ke Database
+        sparqlService.updateCheckOut(existing.getId(), now);
+
+        System.out.println("DEBUG: Check-Out Sukses untuk Absen ID: " + existing.getId());
+
+        return existing;
     }
 }

@@ -12,16 +12,15 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality; // Import Modality
 import javafx.stage.Stage;
 import javafx.scene.control.Button;
-
+import com.omnitask.model.Task;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 public class AttendanceController {
 
@@ -34,7 +33,6 @@ public class AttendanceController {
     @FXML private BorderPane paneDashboard;
     @FXML private Label lblName;
     @FXML private Label lblTarget;
-    @FXML private ImageView imgProfile;
     @FXML private Label lblLocationStatus;
     @FXML private Label lblResult;
     @FXML private Button btnCheckIn;
@@ -138,19 +136,20 @@ public class AttendanceController {
 
     // 3. TAMPILKAN DASHBOARD
     private void showDashboard() {
-        // 1. Tampilkan Panel Dashboard, Sembunyikan Login
         paneLogin.setVisible(false);
         paneDashboard.setVisible(true);
 
-        // 2. Set Data Text
         if (currentEmployee != null) {
             lblName.setText(currentEmployee.getName());
-            lblTarget.setText(currentEmployee.getDailyTarget() != null ? currentEmployee.getDailyTarget() : "-");
 
-            // 3. LOGIKA MANAGER
+            // --- BAGIAN INI DIGANTI DENGAN LOGIKA DINAMIS ---
+            // Dulu: lblTarget.setText(currentEmployee.getDailyTarget() ... );
+            // Sekarang: Panggil method khusus untuk load tasks
+            updateDashboardTasks();
+            // -----------------------------------------------
+
+            // LOGIKA MANAGER
             String role = currentEmployee.getRole();
-            System.out.println("Role User saat ini: " + role);
-
             if (role != null && role.toLowerCase().contains("manager")) {
                 btnEmployees.setVisible(true);
                 btnEmployees.setManaged(true);
@@ -158,22 +157,96 @@ public class AttendanceController {
                 btnEmployees.setVisible(false);
                 btnEmployees.setManaged(false);
             }
-
-            // 4. Load Foto
-            if (currentEmployee.getPhotoPath() != null) {
-                try {
-                    File file = new File(currentEmployee.getPhotoPath());
-                    if (file.exists()) {
-                        imgProfile.setImage(new Image(file.toURI().toString()));
-                    }
-                } catch (Exception e) {
-                    System.err.println("Gagal load foto: " + e.getMessage());
-                }
-            }
         }
 
+        updateAttendanceStatusUI();
         // 5. Cek Lokasi
         checkLocation();
+    }
+
+    private void updateDashboardTasks() {
+        try {
+            // 1. Ambil semua tugas milik karyawan ini
+            List<Task> myTasks = sparqlService.getTasksForEmployee(currentEmployee.getId());
+
+            StringBuilder activeTasksList = new StringBuilder();
+            int count = 0;
+
+            for (Task t : myTasks) {
+                // 2. FILTER: Hanya ambil tugas yang BELUM SELESAI (Bukan COMPLETED)
+                if (t.getStatus() != Task.TaskStatus.COMPLETED) {
+                    if (count > 0) activeTasksList.append("\n\n"); // Jarak antar tugas
+
+                    // Format:
+                    // • Judul Tugas (Status)
+                    activeTasksList.append("• ").append(t.getTitle())
+                            .append(" (").append(t.getStatus()).append(")");
+
+                    count++;
+                }
+            }
+
+            // 3. Tampilkan ke Label
+            if (count > 0) {
+                lblTarget.setText(activeTasksList.toString());
+                lblTarget.setStyle("-fx-font-size: 14px; -fx-text-fill: #333;");
+            } else {
+                // Jika tidak ada tugas aktif, tampilkan pesan default atau target statis
+                String defaultTarget = currentEmployee.getDailyTarget();
+                if (defaultTarget != null && !defaultTarget.equals("-") && !defaultTarget.isEmpty()) {
+                    lblTarget.setText("Target Utama: " + defaultTarget + "\n(Tidak ada tugas pending)");
+                } else {
+                    lblTarget.setText("Semua tugas selesai! Kerja bagus.");
+                    lblTarget.setStyle("-fx-font-size: 14px; -fx-text-fill: green; -fx-font-style: italic;");
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            lblTarget.setText("Gagal memuat tugas.");
+        }
+    }
+
+    private void updateAttendanceStatusUI() {
+        // Cek data hari ini ke database
+        com.omnitask.model.Attendance todayAtt = sparqlService.getTodayAttendance(currentEmployee.getId());
+
+        if (todayAtt != null) {
+            // SUDAH ABSEN (Bisa PRESENT, LATE, SICK, PERMIT)
+            String status = todayAtt.getStatus();
+            lblResult.setText("Status Hari Ini: " + status);
+
+            // Atur Warna Berdasarkan Status
+            switch (status) {
+                case "PRESENT":
+                    lblResult.setStyle("-fx-text-fill: green; -fx-font-weight: bold; -fx-font-size: 14px;");
+                    btnCheckIn.setDisable(true); // Sudah absen, disable checkin
+                    break;
+                case "LATE":
+                    lblResult.setStyle("-fx-text-fill: orange; -fx-font-weight: bold; -fx-font-size: 14px;");
+                    btnCheckIn.setDisable(true);
+                    break;
+                case "SICK":
+                case "PERMIT":
+                    lblResult.setStyle("-fx-text-fill: blue; -fx-font-weight: bold; -fx-font-size: 14px;");
+                    btnCheckIn.setDisable(true); // Sakit/Izin tidak perlu absen
+                    break;
+                default:
+                    lblResult.setStyle("-fx-text-fill: black;");
+            }
+
+            // Cek apakah sudah checkout juga?
+            if (todayAtt.getCheckOutTime() != null) {
+                lblResult.setText(lblResult.getText() + "");
+                btnCheckOut.setDisable(true);
+            }
+
+        } else {
+            // BELUM ABSEN (ALPHA)
+            lblResult.setText("Status: ALPHA (Belum Absen)");
+            lblResult.setStyle("-fx-text-fill: red; -fx-font-style: italic;");
+            // Tombol CheckIn akan di-handle oleh checkLocation() nanti
+        }
     }
 
     @FXML
@@ -202,11 +275,11 @@ public class AttendanceController {
     // 4. CEK LOKASI
     private void checkLocation() {
         // Simulasi Lokasi
-        Location loc = new Location(3.5952, 98.6722);
+        Location loc = getUserCurrentLocation();
         boolean isOffice = geofenceService.isWithinGeofence(loc);
 
         if (isOffice) {
-            lblLocationStatus.setText("Lokasi: Di Kantor (Aman)");
+            lblLocationStatus.setText("Lokasi: Kantor");
             lblLocationStatus.setStyle("-fx-text-fill: green;");
             btnCheckIn.setDisable(false);
             btnCheckOut.setDisable(false);
@@ -233,18 +306,23 @@ public class AttendanceController {
     private void processAttendance(boolean isCheckIn) {
         new Thread(() -> {
             try {
-                Location loc = new Location(3.5952, 98.6722);
+                Location loc = getUserCurrentLocation();
                 if (isCheckIn) {
-                    attendanceService.checkIn(currentEmployee.getId(), loc, currentEmployee.getPhotoPath());
+                    attendanceService.checkIn(currentEmployee.getId(), loc, "-");
                 } else {
-                    attendanceService.checkOut(currentEmployee.getId(), loc, currentEmployee.getPhotoPath());
+                    attendanceService.checkOut(currentEmployee.getId(), loc, "-");
                 }
 
                 Platform.runLater(() -> {
-                    lblResult.setText(isCheckIn ? "Check-In Berhasil!" : "Check-Out Berhasil!");
-                    lblResult.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
-                    if(isCheckIn) btnCheckIn.setDisable(true);
-                    else btnCheckOut.setDisable(true);
+                    // Update UI Status terbaru (Warna & Teks)
+                    updateAttendanceStatusUI();
+
+                    // Tambahan info sukses
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("Sukses");
+                    alert.setHeaderText(null);
+                    alert.setContentText(isCheckIn ? "Berhasil Check-In!" : "Berhasil Check-Out!");
+                    alert.show();
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
@@ -284,5 +362,12 @@ public class AttendanceController {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    // GPS
+    private Location getUserCurrentLocation() {
+        // Ganti angka di sini jika ingin tes simulasi "Di Luar Kantor"
+        // Default: Sama dengan kantor (3.5952, 98.6722)
+        return new Location(3.5952, 98.6722);
     }
 }

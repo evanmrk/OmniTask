@@ -55,8 +55,8 @@
             <Button onAction="#showTasks" styleClass="nav-button" text="📋 Tasks" />
 
             <Button styleClass="nav-button" text="📝 Leave Request" />
-            <Button styleClass="nav-button" text="📊 Dashboard" />
-            <Button styleClass="nav-button" text="📜 History" />
+<!--            <Button styleClass="nav-button" text="📊 Dashboard" />-->
+<!--            <Button styleClass="nav-button" text="📜 History" />-->
         </HBox>
     </bottom>
 

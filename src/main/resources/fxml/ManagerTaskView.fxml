@@ -28,13 +28,15 @@
 
     <Separator />
 
-    <TableView fx:id="tableTasks" VBox.vgrow="ALWAYS" prefHeight="300" prefWidth="600">
-        <columns>
-            <TableColumn fx:id="colTitle" prefWidth="180" text="Judul Tugas" />
-            <TableColumn fx:id="colDesc" prefWidth="200" text="Deskripsi" />
-            <TableColumn fx:id="colStatus" prefWidth="100" text="Status" />
-            <TableColumn fx:id="colProgress" prefWidth="80" text="Progress (%)" />
-        </columns>
+    <TableView fx:id="tableTasks" VBox.vgrow="ALWAYS" prefHeight="300" prefWidth="700"> <columns>
+        <TableColumn fx:id="colTitle" prefWidth="150" text="Judul Tugas" />
+        <TableColumn fx:id="colDesc" prefWidth="180" text="Deskripsi" />
+
+        <TableColumn fx:id="colReason" prefWidth="150" text="Alasan / Catatan" />
+
+        <TableColumn fx:id="colStatus" prefWidth="100" text="Status" />
+        <TableColumn fx:id="colProgress" prefWidth="80" text="Progress" />
+    </columns>
         <columnResizePolicy>
             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
         </columnResizePolicy>

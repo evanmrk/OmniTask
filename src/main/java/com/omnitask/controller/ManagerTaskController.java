@@ -25,6 +25,7 @@ public class ManagerTaskController {
     @FXML private TableColumn<Task, String> colDesc;
     @FXML private TableColumn<Task, String> colStatus;
     @FXML private TableColumn<Task, Integer> colProgress;
+    @FXML private TableColumn<Task, String> colReason;
 
     private SPARQLService sparqlService;
     private Employee targetEmployee; // Karyawan yang sedang diedit
@@ -36,7 +37,14 @@ public class ManagerTaskController {
         // Mapping Kolom Tabel
         colTitle.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getTitle()));
         colDesc.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDescription()));
-        colStatus.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getStatus().name())); // Enum ke String
+
+        // MAPPING ALASAN (Handling jika kosong)
+        colReason.setCellValueFactory(cell -> {
+            String notes = cell.getValue().getDailyNotes();
+            return new SimpleStringProperty(notes != null && !notes.isEmpty() ? notes : "-");
+        });
+
+        colStatus.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getStatus().name()));
         colProgress.setCellValueFactory(cell -> new SimpleIntegerProperty(cell.getValue().getProgressPercentage()).asObject());
     }
 
