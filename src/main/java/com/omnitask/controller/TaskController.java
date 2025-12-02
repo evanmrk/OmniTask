@@ -195,28 +195,15 @@ public class TaskController {
     @FXML
     private void handleBackToAttendance() {
         try {
-            // PERBAIKAN: Sesuaikan dengan nama file di screenshot Anda
-            // Folder: /fxml/
-            // File: attendance_view.fxml
-            java.net.URL fxmlLocation = getClass().getResource("/fxml/attendance_view.fxml");
-
-            if (fxmlLocation == null) {
-                System.err.println("ERROR: File tidak ditemukan di /fxml/attendance_view.fxml");
-                return;
-            }
-
-            FXMLLoader loader = new FXMLLoader(fxmlLocation);
+            // Cukup load FXML saja
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/attendance_view.fxml"));
             Parent root = loader.load();
 
-            // Pindah Scene
-            Stage stage = (Stage) taskContainer.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.show();
+            Scene currentScene = taskContainer.getScene();
+            currentScene.setRoot(root);
 
         } catch (IOException e) {
             e.printStackTrace();
-            // Tampilkan alert jika gagal
-            new Alert(Alert.AlertType.ERROR, "Gagal kembali: " + e.getMessage()).show();
         }
     }
 

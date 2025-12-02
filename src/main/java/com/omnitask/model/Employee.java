@@ -12,6 +12,7 @@ public class Employee {
     private String dailyTarget;  // Penting untuk menampilkan target kerja
     private boolean isManager;
 
+
     // Constructor Kosong (Wajib untuk beberapa library)
     public Employee() {}
 
