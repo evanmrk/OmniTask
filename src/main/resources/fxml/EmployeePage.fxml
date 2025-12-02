@@ -65,6 +65,10 @@
 
                 <Region HBox.hgrow="ALWAYS" />
 
+                <Button onAction="#handleRegisterEmployee"
+                        style="-fx-background-color: #5c1a1b; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 15;"
+                        text="+ Registrasi Karyawan Baru" />
+
                 <Button onAction="#handleRefresh" style="-fx-background-color: #fff; -fx-border-color: #ccc; -fx-cursor: hand;" text="🔄 Refresh Data" />
             </HBox>
 

@@ -13,6 +13,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.time.LocalDate;
@@ -199,5 +200,35 @@ public class EmployeeController {
         alert.setTitle(title);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+
+    // Registrasi
+
+    @FXML
+    private void handleRegisterEmployee() {
+        try {
+            // 1. Load FXML RegisterView
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/RegisterView.fxml")); // Pastikan path benar
+            Parent root = loader.load();
+
+            // 2. Buat Stage Baru (Jendela Pop-up)
+            Stage registerStage = new Stage();
+            registerStage.setTitle("Registrasi Karyawan Baru");
+            registerStage.setScene(new Scene(root));
+
+            // 3. Set Modality: Agar user TIDAK BISA klik window belakang sebelum ini ditutup
+            registerStage.initModality(Modality.APPLICATION_MODAL);
+
+            // 4. Tampilkan dan Tunggu sampai ditutup
+            registerStage.showAndWait();
+
+            // 5. Setelah ditutup, otomatis Refresh Tabel agar data baru muncul
+            loadData();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert("Error", "Gagal membuka form registrasi: " + e.getMessage());
+        }
     }
 }
