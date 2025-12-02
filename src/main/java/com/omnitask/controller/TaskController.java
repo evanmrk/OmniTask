@@ -199,13 +199,8 @@ public class TaskController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/attendance_view.fxml"));
             Parent root = loader.load();
 
-            // TIDAK PERLU lagi baris seperti: attController.restoreSession(...)
-            // Karena saat AttendanceController dimuat (initialize),
-            // dia akan otomatis cek SessionManager.
-
-            Stage stage = (Stage) taskContainer.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.show();
+            Scene currentScene = taskContainer.getScene();
+            currentScene.setRoot(root);
 
         } catch (IOException e) {
             e.printStackTrace();

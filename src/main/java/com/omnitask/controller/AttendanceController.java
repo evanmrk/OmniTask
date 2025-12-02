@@ -168,9 +168,8 @@ public class AttendanceController {
             }
 
             // Pindah Scene
-            Stage stage = (Stage) btnEmployees.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.show();
+            Scene currentScene = btnEmployees.getScene();
+            currentScene.setRoot(root);
 
         } catch (Exception e) {
             e.printStackTrace(); // Cek console untuk error lengkap
@@ -245,8 +244,6 @@ public class AttendanceController {
         }
 
         try {
-            // PERBAIKAN DI SINI:
-            // Menggunakan "/fxml/" karena nama folder di screenshot Anda adalah 'fxml'
             java.net.URL fxmlLocation = getClass().getResource("/fxml/TaskPage.fxml");
 
             if (fxmlLocation == null) {
@@ -257,18 +254,15 @@ public class AttendanceController {
             FXMLLoader loader = new FXMLLoader(fxmlLocation);
             javafx.scene.Parent root = loader.load();
 
-            // Ambil controller TaskPage & kirim data employee
             TaskController taskController = loader.getController();
             taskController.setEmployee(currentEmployee);
 
             // Pindah Scene
-            javafx.stage.Stage stage = (javafx.stage.Stage) btnCheckIn.getScene().getWindow();
-            stage.setScene(new javafx.scene.Scene(root));
-            stage.show();
+            Scene currentScene = btnCheckIn.getScene();
+            currentScene.setRoot(root);
 
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
-            lblResult.setText("Error: " + e.getMessage());
         }
     }
 }

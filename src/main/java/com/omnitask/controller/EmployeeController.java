@@ -16,6 +16,7 @@ import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,13 +40,32 @@ public class EmployeeController {
     public void initialize() {
         sparqlService = new SPARQLService();
 
-        // Setup Kolom Tabel agar bisa baca data object Employee
-        colId.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getId()));
-        colName.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getName()));
-        colDept.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDepartment()));
-        colRole.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getRole()));
-        colTarget.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getDailyTarget()));
+        // Mapping ini mencocokkan kolom Tabel dengan Method Getter di Employee.java
+
+        // Col ID -> getId()
+        colId.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getId()));
+
+        // Col Name -> getName()
+        colName.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getName()));
+
+        // Col Dept -> getDepartment()
+        colDept.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getDepartment()));
+
+        // Col Role -> getRole()
+        colRole.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getRole()));
+
+        // Col Target -> getDailyTarget() (Hanya jika kolom ini ada di FXML)
+        if (colTarget != null) {
+            colTarget.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getDailyTarget()));
+        }
+
         loadData();
+    }
+
+    private void loadData() {
+        java.util.List<Employee> employees = sparqlService.getAllEmployees();
+        javafx.collections.ObservableList<Employee> data = javafx.collections.FXCollections.observableArrayList(employees);
+        tableEmployee.setItems(data);
     }
 
     public void setManager(Employee manager) {
@@ -58,10 +78,6 @@ public class EmployeeController {
         loadData();
     }
 
-    private void loadData() {
-        ObservableList<Employee> data = FXCollections.observableArrayList(sparqlService.getAllEmployees());
-        tableEmployee.setItems(data);
-    }
 
     // ==========================================
     // FITUR 1: BUAT TASK (POPUP)
@@ -167,9 +183,12 @@ public class EmployeeController {
             AttendanceController attController = loader.getController();
             attController.restoreSession(this.currentManager); // Bawa data manager balik
 
-            Stage stage = (Stage) tableEmployee.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.show();
+//            Stage stage = (Stage) tableEmployee.getScene().getWindow();
+//            stage.setScene(new Scene(root));
+//            stage.show();
+
+            Scene currentScene = tableEmployee.getScene();
+            currentScene.setRoot(root);
         } catch (Exception e) {
             e.printStackTrace();
         }
