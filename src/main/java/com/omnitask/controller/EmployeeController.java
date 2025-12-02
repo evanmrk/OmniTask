@@ -231,4 +231,36 @@ public class EmployeeController {
             showAlert("Error", "Gagal membuka form registrasi: " + e.getMessage());
         }
     }
+
+    @FXML
+    private void handleManageTasks() {
+        // 1. Cek apakah ada karyawan yang dipilih di tabel
+        Employee selectedEmp = tableEmployee.getSelectionModel().getSelectedItem();
+
+        if (selectedEmp == null) {
+            showAlert("Pilih Karyawan", "Silakan klik salah satu nama karyawan di tabel terlebih dahulu.");
+            return;
+        }
+
+        try {
+            // 2. Load View ManagerTaskView
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ManagerTaskView.fxml"));
+            Parent root = loader.load();
+
+            // 3. Ambil Controller-nya dan kirim data Karyawan yang dipilih
+            ManagerTaskController taskController = loader.getController();
+            taskController.setTargetEmployee(selectedEmp); // <--- INI PENTING
+
+            // 4. Tampilkan sebagai Pop-up (Modal)
+            Stage stage = new Stage();
+            stage.setTitle("Task Manager - " + selectedEmp.getName());
+            stage.setScene(new Scene(root));
+            stage.initModality(Modality.APPLICATION_MODAL); // Window belakang tidak bisa diklik
+            stage.showAndWait();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert("Error", "Gagal membuka task manager: " + e.getMessage());
+        }
+    }
 }

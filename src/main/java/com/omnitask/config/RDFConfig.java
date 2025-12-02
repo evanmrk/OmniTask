@@ -7,13 +7,13 @@ import org.apache.jena.rdf.model.*;
 
 public class RDFConfig {
 
-    private static RDFConnection connection;
+    private static RDFConnection connection; // Ini hanya dipakai untuk proses initialize awal
     private static final String FUSEKI_URL = "http://localhost:3030/omnitask";
     private static final String NS = "http://omnitask.com/ontology#";
 
     public static void initialize() {
         try {
-            // Connect to Fuseki server
+            // Connect to Fuseki server (Untuk keperluan cek awal)
             connection = RDFConnectionFactory.connect(FUSEKI_URL);
             System.out.println("✓ Connected to Fuseki server at " + FUSEKI_URL);
 
@@ -75,9 +75,14 @@ public class RDFConfig {
         System.out.println("✓ Base ontology created in Fuseki");
     }
 
+    // --- BAGIAN INI YANG DIPERBAIKI ---
     public static RDFConnection getConnection() {
-        return connection;
+        // KITA UBAH DI SINI:
+        // Jangan return variabel 'connection' (static) karena itu sudah ditutup oleh SPARQLService.
+        // Kita harus buat koneksi BARU setiap kali diminta.
+        return RDFConnectionFactory.connect(FUSEKI_URL);
     }
+    // ----------------------------------
 
     public static String getNamespace() {
         return NS;

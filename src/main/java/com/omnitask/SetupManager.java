@@ -15,7 +15,7 @@ public class SetupManager {
         // 2. Buat Data Manager
         Employee manager = new Employee();
         manager.setId("EMP-1X8W91");     // ID Manager yang Anda tentukan
-        manager.setName("Evan Manager"); // Nama Manager
+        manager.setName("Manager Admin"); // Nama Manager
         manager.setRole("Manager");      // PENTING: Ini kunci agar tombol "Employees" muncul
 
         // Field Department, Email, dan Target TIDAK DISET (akan dianggap kosong/- oleh sistem)

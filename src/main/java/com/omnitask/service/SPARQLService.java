@@ -45,13 +45,11 @@ public class SPARQLService {
     // ==========================================
 
     public void saveEmployee(Employee emp) {
-        // Null Safety: Ganti null dengan string kosong agar tidak error di SPARQL
+        // ... (kode string builder variabel email, dept, dll tetap sama) ...
         String email = emp.getEmail() != null ? emp.getEmail() : "";
         String dept = emp.getDepartment() != null ? emp.getDepartment() : "";
         String role = emp.getRole() != null ? emp.getRole() : "";
         String target = emp.getDailyTarget() != null ? emp.getDailyTarget() : "-";
-
-        // Fix path Windows (\) menjadi Unix (/) agar aman di RDF
         String photo = emp.getPhotoPath() != null ? emp.getPhotoPath().replace("\\", "/") : "";
 
         String updateString = PREFIXES +
@@ -66,8 +64,14 @@ public class SPARQLService {
                 "    omni:dailyTarget \"" + target + "\" . " +
                 "}";
 
-        executeUpdate(updateString);
-        System.out.println("✓ Employee " + emp.getName() + " saved to Fuseki.");
+        // PERUBAHAN PENTING DI SINI:
+        try {
+            executeUpdate(updateString);
+            System.out.println("✓ Employee " + emp.getName() + " saved to Fuseki.");
+        } catch (Exception e) {
+            // LEMPAR ULANG ERRORNYA KE REGISTER CONTROLLER
+            throw new RuntimeException("Gagal Simpan ke DB: " + e.getMessage());
+        }
     }
 
     public Employee getEmployeeById(String id) {
@@ -415,9 +419,6 @@ public class SPARQLService {
         try (RDFConnection conn = RDFConfig.getConnection()) {
             conn.update(sparql);
             System.out.println("SPARQL Update Success");
-        } catch (Exception e) {
-            System.err.println("SPARQL Update Failed: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
