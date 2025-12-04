@@ -31,7 +31,7 @@ public class AttendanceService {
             throw new Exception("DILUAR JAM KERJA");
         }
 
-        // 2. Cek apakah sudah absen hari ini?
+        // 2. Cek apakah sudah absen hari ini
         Attendance existing = sparqlService.getTodayAttendance(employeeId);
         if (existing != null) {
             throw new Exception("Anda sudah absen hari ini (Status: " + existing.getStatus() +
