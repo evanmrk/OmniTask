@@ -21,6 +21,8 @@ import com.omnitask.model.Employee;
 import com.omnitask.model.Location;
 import com.omnitask.model.Task;
 import com.omnitask.model.Task.TaskStatus;
+import com.omnitask.model.LeaveRequest;
+
 
 public class SPARQLService {
 
@@ -110,10 +112,7 @@ public class SPARQLService {
         return null;
     }
 
-    /**
-     * Method untuk mengambil SEMUA karyawan (Dipakai di Halaman Manager).
-     * Menggunakan logika robust (OPTIONAL) untuk menangani data kosong.
-     */
+
     public List<Employee> getAllEmployees() {
         System.out.println("--- DEBUG: MEMULAI FETCH ALL EMPLOYEES ---");
 
@@ -539,5 +538,130 @@ public class SPARQLService {
             saveAttendance(newAtt); // Simpan sebagai absen baru
             System.out.println("✓ New attendance record created by Manager: " + newStatus);
         }
+    }
+
+
+    // LEAVE REQUEST METHODS
+
+    public void saveLeaveRequest(LeaveRequest req) {
+        String reqType = req.getType().name();
+        String status = req.getStatus().name();
+        String startDate = req.getStartDate() != null ? req.getStartDate().format(DATE_FMT) : "";
+
+        // Data Optional
+        String endDate = req.getEndDate() != null ? req.getEndDate().format(DATE_FMT) : "";
+        String reason = req.getReason() != null ? req.getReason() : "-";
+        String duration = req.getDuration() != null ? req.getDuration() : "-";
+        String dest = req.getDestination() != null ? req.getDestination() : "-";
+        String transport = req.getTransport() != null ? req.getTransport() : "-";
+
+        String updateString = PREFIXES +
+                "INSERT DATA { " +
+                "  omni:req_" + req.getRequestId() + " rdf:type omni:LeaveRequest ; " +
+                "    omni:reqId \"" + req.getRequestId() + "\" ; " +
+                "    omni:hasEmployeeId \"" + req.getEmployeeId() + "\" ; " +
+                "    omni:employeeName \"" + req.getEmployeeName() + "\" ; " +
+                "    omni:reqType \"" + reqType + "\" ; " +
+                "    omni:reqStatus \"" + status + "\" ; " +
+                "    omni:startDate \"" + startDate + "\"^^xsd:date ; " +
+
+                // Masukkan semua field (biarkan berisi "-" jika tidak relevan) agar query nanti mudah
+                "    omni:endDate \"" + endDate + "\" ; " +
+                "    omni:reason \"" + reason + "\" ; " +
+                "    omni:duration \"" + duration + "\" ; " +
+                "    omni:destination \"" + dest + "\" ; " +
+                "    omni:transport \"" + transport + "\" . " +
+                "}";
+
+        executeUpdate(updateString);
+        System.out.println("✓ Leave Request saved: " + req.getRequestId());
+    }
+
+    // Nanti kita akan butuh ini untuk Manager:
+    public java.util.List<LeaveRequest> getAllLeaveRequests() {
+        // (Akan kita implementasikan di tahap selanjutnya saat membuat Approval Page)
+        return new java.util.ArrayList<>();
+    }
+
+
+    // 5. LEAVE REQUEST MANAGER METHODS
+
+
+    public java.util.List<com.omnitask.model.LeaveRequest> getLeaveRequestsByEmployee(String employeeId) {
+        // Query ambil data
+        String queryString = PREFIXES +
+                "SELECT ?s ?reqId ?type ?status ?start ?end ?reason ?dest ?trans WHERE { " +
+                "  ?s rdf:type omni:LeaveRequest . " +
+                "  ?s omni:hasEmployeeId \"" + employeeId + "\" . " +
+                "  ?s omni:reqId ?reqId . " +
+                "  OPTIONAL { ?s omni:reqType ?type } " +
+                "  OPTIONAL { ?s omni:reqStatus ?status } " +
+                "  OPTIONAL { ?s omni:startDate ?start } " +
+                "  OPTIONAL { ?s omni:endDate ?end } " +
+                "  OPTIONAL { ?s omni:reason ?reason } " +
+                "  OPTIONAL { ?s omni:destination ?dest } " +
+                "  OPTIONAL { ?s omni:transport ?trans } " +
+                "} ORDER BY DESC(?start)";
+
+        java.util.List<com.omnitask.model.LeaveRequest> requests = new java.util.ArrayList<>();
+
+        try (RDFConnection conn = RDFConfig.getConnection();
+             QueryExecution qExec = conn.query(queryString)) {
+
+            ResultSet rs = qExec.execSelect();
+            while (rs.hasNext()) {
+                QuerySolution soln = rs.next();
+                com.omnitask.model.LeaveRequest req = new com.omnitask.model.LeaveRequest();
+
+                try {
+                    req.setRequestId(soln.getLiteral("reqId").getString());
+                    req.setEmployeeId(employeeId);
+
+                    // Parsing Enum
+                    if (soln.contains("type")) req.setType(com.omnitask.model.LeaveRequest.RequestType.valueOf(soln.getLiteral("type").getString()));
+                    if (soln.contains("status")) req.setStatus(com.omnitask.model.LeaveRequest.RequestStatus.valueOf(soln.getLiteral("status").getString()));
+
+                    // Parsing Tanggal (Null Safe)
+                    if (soln.contains("start")) {
+                        String s = soln.getLiteral("start").getString().replace("^^http://www.w3.org/2001/XMLSchema#date", "");
+                        if(!s.isEmpty()) req.setStartDate(java.time.LocalDate.parse(s));
+                    }
+                    if (soln.contains("end")) {
+                        String e = soln.getLiteral("end").getString().replace("^^http://www.w3.org/2001/XMLSchema#date", "");
+                        if(!e.isEmpty()) req.setEndDate(java.time.LocalDate.parse(e));
+                    }
+
+                    // Parsing String Lainnya
+                    if (soln.contains("reason")) req.setReason(soln.getLiteral("reason").getString());
+                    if (soln.contains("dest")) req.setDestination(soln.getLiteral("dest").getString());
+                    if (soln.contains("trans")) req.setTransport(soln.getLiteral("trans").getString());
+
+                    requests.add(req);
+                } catch (Exception ex) {
+                    System.err.println("Skip row error: " + ex.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return requests;
+    }
+
+    public void updateLeaveRequestStatus(String requestId, String newStatus) {
+        String updateString = PREFIXES +
+                "DELETE { ?s omni:reqStatus ?oldStatus } " +
+                "INSERT { ?s omni:reqStatus \"" + newStatus + "\" } " +
+                "WHERE { " +
+                "  ?s omni:reqId \"" + requestId + "\" . " +
+                "  ?s omni:reqStatus ?oldStatus " +
+                "}";
+
+        executeUpdate(updateString);
+        System.out.println("✓ Leave Request " + requestId + " updated to " + newStatus);
+    }
+
+    public void deleteLeaveRequest(String requestId) {
+        String updateString = PREFIXES + "DELETE WHERE { ?s omni:reqId \"" + requestId + "\" . ?s ?p ?o }";
+        executeUpdate(updateString);
     }
 }

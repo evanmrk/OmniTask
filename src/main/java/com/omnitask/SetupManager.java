@@ -8,14 +8,13 @@ public class SetupManager {
     public static void main(String[] args) {
         System.out.println("Memulai proses pendaftaran Manager...");
 
-        //Inisialisasi Database
         RDFConfig.initialize();
         SPARQLService service = new SPARQLService();
 
         //Create Data Manager
         Employee manager = new Employee();
         manager.setId("EMP-1X8W91");
-        manager.setName("Manager Admin");
+        manager.setName("Manager REA");
         manager.setRole("Manager");
 
 

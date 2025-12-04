@@ -254,4 +254,22 @@ public class TaskController {
             e.printStackTrace();
         }
     }
+
+
+    @FXML
+    private void handleGoToLeaveRequest() {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/LeaveRequestView.fxml"));
+            javafx.scene.Parent root = loader.load();
+
+            // PERBAIKAN: Gunakan 'taskContainer' (VBox utama di TaskPage)
+            javafx.scene.Scene currentScene = taskContainer.getScene();
+            currentScene.setRoot(root);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Pastikan Anda punya method showAlert atau print stackTrace
+            System.err.println("Gagal membuka Leave Request: " + e.getMessage());
+        }
+    }
 }

@@ -1,7 +1,7 @@
 package com.omnitask.service;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime; // Import baru untuk jam
+import java.time.LocalTime;
 import java.util.UUID;
 
 import com.omnitask.model.Attendance;
@@ -12,8 +12,9 @@ public class AttendanceService {
     private GeofenceService geofenceService;
     private SPARQLService sparqlService;
 
-    // --- KONFIGURASI JAM MASUK (Bisa diubah sesuai kebutuhan) ---
-    private static final LocalTime JAM_MASUK = LocalTime.of(9, 0); // 09:00 Pagi
+    // --- KONFIGURASI JAM ---
+    private static final LocalTime JAM_MASUK = LocalTime.of(9, 0);      // 09:00 Pagi (Batas Terlambat)
+    private static final LocalTime JAM_BATAS_AKHIR = LocalTime.of(16, 0); // 16:00 Sore (Batas Absen Masuk)
 
     public AttendanceService() {
         this.geofenceService = new GeofenceService();
@@ -21,34 +22,40 @@ public class AttendanceService {
     }
 
     public Attendance checkIn(String employeeId, Location location, String photoPath) throws Exception {
-        // 1. Cek apakah sudah absen hari ini?
+        // Ambil waktu sekarang
+        LocalDateTime now = LocalDateTime.now();
+
+        // --- 1. VALIDASI JAM KERJA (FITUR BARU) ---
+        // Jika waktu sekarang LEBIH DARI jam 16:00, tolak akses.
+        if (now.toLocalTime().isAfter(JAM_BATAS_AKHIR)) {
+            throw new Exception("DILUAR JAM KERJA");
+        }
+
+        // 2. Cek apakah sudah absen hari ini?
         Attendance existing = sparqlService.getTodayAttendance(employeeId);
         if (existing != null) {
-            // Jika statusnya bukan SICK/PERMIT, tolak check-in ganda
             throw new Exception("Anda sudah absen hari ini (Status: " + existing.getStatus() +
                     ") pada jam " + existing.getCheckInTime().toLocalTime());
         }
 
-        // 2. Buat Data Absensi Baru
+        // 3. Buat Data Absensi Baru
         Attendance attendance = new Attendance();
         String attId = "ATT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        LocalDateTime now = LocalDateTime.now();
 
         attendance.setId(attId);
         attendance.setEmployeeId(employeeId);
-        attendance.setCheckInTime(now);
+        attendance.setCheckInTime(now); // Gunakan waktu yang sudah diambil di atas
         attendance.setLocation(location);
         attendance.setPhotoPath(photoPath);
 
-        // --- 3. LOGIKA PENENTUAN STATUS (PRESENT vs LATE) ---
-        // Jika waktu check-in (now) lebih dari jam 09:00, maka LATE
+        // 4. Logika Penentuan Status (PRESENT vs LATE)
         if (now.toLocalTime().isAfter(JAM_MASUK)) {
             attendance.setStatus("LATE");
         } else {
             attendance.setStatus("PRESENT");
         }
 
-        // 4. Simpan ke Database
+        // 5. Simpan ke Database
         sparqlService.saveAttendance(attendance);
         System.out.println("DEBUG: Check-In Sukses (" + attendance.getStatus() + ") ID: " + attId);
 
@@ -58,22 +65,18 @@ public class AttendanceService {
     public Attendance checkOut(String employeeId, Location location, String photoPath) throws Exception {
         Attendance existing = sparqlService.getTodayAttendance(employeeId);
 
-        // Jika tidak ada data hari ini (return null), berarti user belum Check-In
         if (existing == null) {
             System.err.println("DEBUG: Gagal CheckOut. Tidak ada data CheckIn hari ini untuk: " + employeeId);
             throw new Exception("Gagal: Data Check-In hari ini tidak ditemukan. Harap Check-In dulu.");
         }
 
-        // 2. Cek apakah SUDAH Check-Out sebelumnya?
         if (existing.getCheckOutTime() != null) {
             throw new Exception("Anda sudah Check-Out sebelumnya pada jam " + existing.getCheckOutTime().toLocalTime());
         }
 
-        // 3. Update Waktu Check-Out
         LocalDateTime now = LocalDateTime.now();
         existing.setCheckOutTime(now);
 
-        // 4. Update ke Database
         sparqlService.updateCheckOut(existing.getId(), now);
 
         System.out.println("DEBUG: Check-Out Sukses untuk Absen ID: " + existing.getId());

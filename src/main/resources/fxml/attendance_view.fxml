@@ -118,8 +118,8 @@
                 </padding>
                 <Button style="-fx-background-color: #5c1a1b; -fx-text-fill: white;" text="🏠 Attendance" />
                 <Button text="📋 Tasks" onAction="#handleGoToTasks"/>
-<!--                <Button text="📝 Leave Request" />-->
-<!--                <Button text="📊 Dashboard" />-->
+                <Button text="📝 Leave Request" onAction="#handleGoToLeaveRequest" />
+
 
                 <Button fx:id="btnEmployees" text="👥 Employees"
                         onAction="#handleGoToEmployees"
