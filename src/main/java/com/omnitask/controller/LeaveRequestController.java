@@ -25,7 +25,7 @@ public class LeaveRequestController {
     // Form General
     @FXML private VBox formGeneral;
     @FXML private DatePicker dpStartDateGeneral;
-    @FXML private TextField txtDuration;
+
     @FXML private TextArea txtReason;
 
     // Form Dinas
@@ -44,6 +44,7 @@ public class LeaveRequestController {
     @FXML private TableColumn<LeaveRequest, String> colType;
     @FXML private TableColumn<LeaveRequest, String> colStatus;
     @FXML private TableColumn<LeaveRequest, String> colReason;
+    @FXML private DatePicker dpEndDateGeneral;
 
     private SPARQLService sparqlService;
     private Employee currentUser;
@@ -163,17 +164,30 @@ public class LeaveRequestController {
                 req.setTransport(txtTransport.getText());
 
             } else {
-                if (dpStartDateGeneral.getValue() == null || txtDuration.getText().isEmpty() ||
+                if (dpStartDateGeneral.getValue() == null || dpEndDateGeneral.getValue() == null ||
                         txtReason.getText().isEmpty()) {
                     showAlert("Validasi Gagal", "Semua kolom Cuti/Izin wajib diisi!");
                     return;
                 }
+
+                // Validasi Tanggal
+                if (dpEndDateGeneral.getValue().isBefore(dpStartDateGeneral.getValue())) {
+                    showAlert("Validasi Gagal", "Tanggal Selesai tidak boleh sebelum Tanggal Mulai.");
+                    return;
+                }
+
                 req.setType(typeSelection.equals("Cuti") ? LeaveRequest.RequestType.CUTI : LeaveRequest.RequestType.IZIN);
                 req.setStartDate(dpStartDateGeneral.getValue());
-                req.setDuration(txtDuration.getText());
+                req.setEndDate(dpEndDateGeneral.getValue());
+
+                long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(
+                        dpStartDateGeneral.getValue(), dpEndDateGeneral.getValue()
+                ) + 1;
+
+                req.setDuration(daysBetween + " Hari"); // Simpan hasil hitungan ke database
+
                 req.setReason(txtReason.getText());
             }
-
             sparqlService.saveLeaveRequest(req);
             showAlert("Berhasil", "Pengajuan berhasil dikirim!\nID: " + req.getRequestId() + "\nStatus: MENUNGGU PERSETUJUAN");
             handleBackToDashboard();

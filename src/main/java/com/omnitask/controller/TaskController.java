@@ -67,7 +67,7 @@ public class TaskController {
         taskContainer.getChildren().clear();
 
         // Menggunakan method getTodayTasks dari SPARQLService Anda
-        List<Task> tasks = sparqlService.getTodayTasks(currentEmployee.getId());
+        List<Task> tasks = sparqlService.getTasksForEmployee(currentEmployee.getId());
 
         if (tasks.isEmpty()) {
             Label emptyLbl = new Label("Tidak ada tugas terjadwal untuk hari ini.");

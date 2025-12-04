@@ -57,7 +57,6 @@ public class Attendance {
         this.id = id;
     }
 
-    // ✅ FIX: Method ini yang error - sekarang sudah benar
     public String getAttendanceId() {
         return this.id;  // Return id yang sama
     }
