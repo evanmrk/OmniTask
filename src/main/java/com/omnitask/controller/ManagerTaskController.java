@@ -89,7 +89,6 @@ public class ManagerTaskController {
 
         grid.add(new Label("Judul:"), 0, 0); grid.add(txtTitle, 1, 0);
         grid.add(new Label("Deskripsi:"), 0, 1); grid.add(txtDesc, 1, 1);
-        grid.add(new Label("Deadline:"), 0, 2); grid.add(datePicker, 1, 2);
 
         dialog.getDialogPane().setContent(grid);
 

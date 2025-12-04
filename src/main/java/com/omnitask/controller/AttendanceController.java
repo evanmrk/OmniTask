@@ -161,9 +161,9 @@ public class AttendanceController {
             }
         }
 
-        updateAttendanceStatusUI();
-        // 5. Cek Lokasi
         checkLocation();
+
+        updateAttendanceStatusUI();
     }
 
     private void updateDashboardTasks() {
@@ -218,6 +218,7 @@ public class AttendanceController {
             String status = todayAtt.getStatus();
             lblResult.setText("Status Hari Ini: " + status);
 
+            btnCheckIn.setDisable(true);
             // Atur Warna Berdasarkan Status
             switch (status) {
                 case "PRESENT":
@@ -380,14 +381,11 @@ public class AttendanceController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/LeaveRequestView.fxml"));
             Parent root = loader.load();
 
-            // Ganti Scene
-            // (Gunakan salah satu komponen UI yang ada untuk getScene())
-            Scene currentScene = btnCheckIn.getScene(); // Contoh di AttendanceController
+            Scene currentScene = btnCheckIn.getScene();
             currentScene.setRoot(root);
 
         } catch (Exception e) {
             e.printStackTrace();
-            // Show Alert Error
         }
     }
 

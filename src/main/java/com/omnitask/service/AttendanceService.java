@@ -14,7 +14,7 @@ public class AttendanceService {
 
     // --- KONFIGURASI JAM ---
     private static final LocalTime JAM_MASUK = LocalTime.of(9, 0);      // 09:00 Pagi (Batas Terlambat)
-    private static final LocalTime JAM_BATAS_AKHIR = LocalTime.of(16, 0); // 16:00 Sore (Batas Absen Masuk)
+    private static final LocalTime JAM_BATAS_AKHIR = LocalTime.of(23, 0); // 16:00 Sore (Batas Absen Masuk)
 
     public AttendanceService() {
         this.geofenceService = new GeofenceService();
@@ -44,7 +44,7 @@ public class AttendanceService {
 
         attendance.setId(attId);
         attendance.setEmployeeId(employeeId);
-        attendance.setCheckInTime(now); // Gunakan waktu yang sudah diambil di atas
+        attendance.setCheckInTime(now);
         attendance.setLocation(location);
         attendance.setPhotoPath(photoPath);
 

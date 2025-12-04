@@ -49,11 +49,20 @@
                     <Label text="Detail Izin / Cuti" style="-fx-font-weight: bold; -fx-text-fill: #2980b9;"/>
                     <Separator/>
 
-                    <Label text="Tanggal Mulai:"/>
-                    <DatePicker fx:id="dpStartDateGeneral"/>
+                    <!-- DIGANTI JADI HBOX (Tanggal Mulai & Selesai) -->
+                    <HBox spacing="10">
+                        <VBox>
+                            <Label text="Tanggal Mulai:"/>
+                            <DatePicker fx:id="dpStartDateGeneral"/>
+                        </VBox>
+                        <VBox>
+                            <Label text="Tanggal Selesai:"/>
+                            <DatePicker fx:id="dpEndDateGeneral"/> <!-- ID BARU -->
+                        </VBox>
+                    </HBox>
 
-                    <Label text="Durasi (hari):"/>
-                    <TextField fx:id="txtDuration" promptText="Contoh: 2 Hari"/>
+<!--                    <Label text="Durasi (hari):"/>-->
+<!--                    <TextField fx:id="txtDuration" promptText="Contoh: 2 Hari"/>-->
 
                     <Label text="Alasan Izin:"/>
                     <TextArea fx:id="txtReason" prefRowCount="3" promptText="Jelaskan alasan izin Anda..."/>
