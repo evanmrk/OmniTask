@@ -93,6 +93,9 @@
                 <Label text="Aksi untuk karyawan terpilih:" textFill="#555">
                     <font><Font name="System Italic" size="13.0" /></font>
                 </Label>
+                <Button onAction="#handleManageLeave"
+                        style="-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 20;"
+                        text="🗂 Kelola Izin" />
 
                 <Button onAction="#handleManageTasks"
                         style="-fx-background-color: #e67e22; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 20;"
@@ -120,8 +123,7 @@
 
             <Button text="📋 Tasks" onAction="#handleGoToTasks"/>
 
-<!--            <Button text="📝 Leave Request" />-->
-<!--            <Button text="📊 Dashboard" />-->
+            <Button text="📝 Leave Request" onAction="#handleGoToLeaveRequest"/>
 
             <Button text="👥 Employees"
                     style="-fx-background-color: #5c1a1b; -fx-text-fill: white; -fx-font-weight: bold;"/>

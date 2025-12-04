@@ -14,13 +14,15 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.Modality; // Import Modality
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.scene.control.Button;
 import com.omnitask.model.Task;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import com.omnitask.controller.ManagerLeaveController;
+
 
 public class AttendanceController {
 
@@ -369,5 +371,31 @@ public class AttendanceController {
         // Ganti angka di sini jika ingin tes simulasi "Di Luar Kantor"
         // Default: Sama dengan kantor (3.5952, 98.6722)
         return new Location(3.5952, 98.6722);
+    }
+
+
+    @FXML
+    private void handleGoToLeaveRequest() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/LeaveRequestView.fxml"));
+            Parent root = loader.load();
+
+            // Ganti Scene
+            // (Gunakan salah satu komponen UI yang ada untuk getScene())
+            Scene currentScene = btnCheckIn.getScene(); // Contoh di AttendanceController
+            currentScene.setRoot(root);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Show Alert Error
+        }
+    }
+
+    private void showAlert(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        alert.showAndWait();
     }
 }

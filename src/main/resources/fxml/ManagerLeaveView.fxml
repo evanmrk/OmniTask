@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox spacing="10" style="-fx-background-color: white; -fx-padding: 15;" prefWidth="900" prefHeight="600"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.omnitask.controller.ManagerLeaveController">
+
+    <!-- HEADER -->
+    <HBox alignment="CENTER_LEFT" spacing="15">
+        <VBox>
+            <Label text="Manajemen Izin Karyawan" textFill="#5c1a1b">
+                <font><Font name="System Bold" size="20" /></font>
+            </Label>
+            <Label fx:id="lblEmployeeName" text="Karyawan: -" textFill="#666"/>
+        </VBox>
+        <Region HBox.hgrow="ALWAYS" />
+
+        <Label text="Filter Status:" />
+        <ComboBox fx:id="cbFilter" prefWidth="150" />
+        <Button text="🔄 Refresh" onAction="#handleRefresh"/>
+    </HBox>
+
+    <Separator />
+
+    <SplitPane dividerPositions="0.4" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent;">
+
+        <!-- BAGIAN KIRI: DAFTAR REQUEST -->
+        <VBox spacing="5">
+            <padding><Insets right="10"/></padding>
+            <Label text="Riwayat Pengajuan" style="-fx-font-weight: bold;"/>
+            <TableView fx:id="tableRequests" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="colDate" text="Tgl Mulai" prefWidth="100"/>
+                    <TableColumn fx:id="colType" text="Tipe" prefWidth="100"/>
+                    <TableColumn fx:id="colStatus" text="Status" prefWidth="100"/>
+                </columns>
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                </columnResizePolicy>
+            </TableView>
+        </VBox>
+
+        <!-- BAGIAN KANAN: DETAIL REQUEST -->
+        <VBox spacing="15" style="-fx-padding: 10; -fx-background-color: #f9f9f9;">
+            <Label text="Detail Permohonan" style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #333;"/>
+            <Separator />
+
+            <GridPane vgap="10" hgap="10">
+                <Label text="ID Request:" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-text-fill: #777;"/>
+                <Label fx:id="lblReqId" text="-" GridPane.rowIndex="0" GridPane.columnIndex="1" style="-fx-font-weight: bold;"/>
+
+                <Label text="Jenis Izin:" GridPane.rowIndex="1" GridPane.columnIndex="0" style="-fx-text-fill: #777;"/>
+                <Label fx:id="lblType" text="-" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                <Label text="Periode:" GridPane.rowIndex="2" GridPane.columnIndex="0" style="-fx-text-fill: #777;"/>
+                <Label fx:id="lblDateRange" text="-" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                <Label text="Status Saat Ini:" GridPane.rowIndex="3" GridPane.columnIndex="0" style="-fx-text-fill: #777;"/>
+                <Label fx:id="lblStatusDetail" text="-" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+            </GridPane>
+
+            <VBox spacing="5" style="-fx-background-color: white; -fx-padding: 10; -fx-border-color: #ddd; -fx-border-radius: 5;">
+                <Label text="Alasan / Keperluan:" style="-fx-font-weight: bold; -fx-font-size: 12px;"/>
+                <Label fx:id="lblReason" text="-" wrapText="true" />
+            </VBox>
+
+            <VBox fx:id="boxDinasDetails" spacing="5" visible="false" managed="false"
+                  style="-fx-background-color: white; -fx-padding: 10; -fx-border-color: #e67e22; -fx-border-radius: 5; -fx-border-width: 0 0 0 3;">
+                <Label text="Info Perjalanan Dinas:" style="-fx-font-weight: bold; -fx-text-fill: #e67e22;"/>
+                <HBox spacing="10"><Label text="Tujuan:"/><Label fx:id="lblDest" style="-fx-font-weight: bold;"/></HBox>
+                <HBox spacing="10"><Label text="Transport:"/><Label fx:id="lblTransport" style="-fx-font-weight: bold;"/></HBox>
+            </VBox>
+
+            <Region VBox.vgrow="ALWAYS" />
+
+            <!-- TOMBOL AKSI -->
+            <HBox fx:id="boxActions" spacing="10" alignment="CENTER_RIGHT" visible="false">
+                <Label text="Tindakan:" style="-fx-text-fill: #555; -fx-font-style: italic;"/>
+                <Button text="🗑 Hapus" onAction="#handleDelete"
+                        style="-fx-background-color: #7f8c8d; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
+                <Button text="❌ Tolak (Reject)" onAction="#handleReject"
+                        style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
+                <Button text="✅ Setujui (Accept)" onAction="#handleAccept"
+                        style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
+            </HBox>
+            <Label fx:id="lblActionInfo" text="Permohonan ini sudah diproses." visible="false" style="-fx-text-fill: #777; -fx-font-style: italic;"/>
+
+        </VBox>
+    </SplitPane>
+
+    <HBox alignment="CENTER_RIGHT">
+        <Button text="Tutup" onAction="#handleClose" style="-fx-pref-width: 100;"/>
+    </HBox>
+
+</VBox>

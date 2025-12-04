@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import com.omnitask.controller.ManagerLeaveController;
 
 public class EmployeeController {
 
@@ -301,6 +302,54 @@ public class EmployeeController {
         } catch (Exception e) {
             e.printStackTrace();
             new Alert(Alert.AlertType.ERROR, "Gagal ke Tasks: " + e.getMessage()).show();
+        }
+    }
+
+    @FXML
+    private void handleGoToLeaveRequest() {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/fxml/LeaveRequestView.fxml"));
+            javafx.scene.Parent root = loader.load();
+
+            // PERBAIKAN: Gunakan 'tableEmployee' karena btnCheckIn tidak ada di sini
+            javafx.scene.Scene currentScene = tableEmployee.getScene();
+            currentScene.setRoot(root);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert("Error", "Gagal membuka halaman Leave Request: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleManageLeave() {
+        // Ambil karyawan yang dipilih di tabel
+        Employee selectedEmp = tableEmployee.getSelectionModel().getSelectedItem();
+
+        if (selectedEmp == null) {
+            showAlert("Pilih Karyawan", "Silakan klik nama karyawan terlebih dahulu.");
+            return;
+        }
+
+        try {
+            // Load tampilan ManagerLeaveView
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/ManagerLeaveView.fxml"));
+            Parent root = loader.load();
+
+            // Ambil controller dan kirim data karyawan
+            ManagerLeaveController controller = loader.getController();
+            controller.setTargetEmployee(selectedEmp);
+
+            // Tampilkan Pop-up
+            Stage stage = new Stage();
+            stage.setTitle("Kelola Izin - " + selectedEmp.getName());
+            stage.setScene(new Scene(root));
+            stage.initModality(Modality.APPLICATION_MODAL); // Modal = User harus tutup ini dulu sebelum klik yang lain
+            stage.showAndWait();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showAlert("Error", "Gagal membuka halaman izin: " + e.getMessage());
         }
     }
 }
